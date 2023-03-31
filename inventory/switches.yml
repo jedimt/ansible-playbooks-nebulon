@@ -1,0 +1,11 @@
+---
+# TME 10 Gb switches
+switches:
+  hosts:
+    10.100.24.4:
+    10.100.24.5:
+  vars:
+    ansible_user: admin
+    ansible_password: "{{ vault_switch_password }}"
+    ansible_connection: network_cli
+    ansible_network_os: ios

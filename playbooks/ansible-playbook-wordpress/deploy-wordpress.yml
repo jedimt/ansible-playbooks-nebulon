@@ -1,0 +1,38 @@
+---
+# Installs Wordpress with CSI persistent volumes
+# Requires kubernetes python module and the Kubernetes collection
+# python -m pip install kubernetes
+# ansible-galaxy collection install kubernetes.core
+
+# Example invocation:
+
+# Create: ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-wordpress/deploy-wordpress.yml
+# Remove: ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-wordpress/deploy-wordpress.yml -e state=absent
+
+- name: Wordpress Install
+  hosts: k8s_master
+
+  tasks:
+    - name: Copy kubeconfig to local machine
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: ~/.kube/{{ inventory_hostname }}-config
+        flat: true
+      tags: kubeconfig
+
+    - name: Set kubeconfig variable
+      ansible.builtin.set_fact:
+        kubeconfig: ~/.kube/{{ inventory_hostname }}-config
+      changed_when: false
+      tags: kubeconfig
+
+- name: Install WordPress application
+  hosts: localhost
+  connection: local
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - { role: ansible-role-wordpress }

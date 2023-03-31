@@ -1,0 +1,5 @@
+rules:
+  truthy:
+    allowed-values: ['true', 'false', 'on']
+  document-start:
+    ignore: /home/apatt/github/demopod-ansible/credentials.yml

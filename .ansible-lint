@@ -1,0 +1,6 @@
+skip_list:
+  - '306'
+
+exclude_paths:
+  - "/home/apatt/github/demopod-ansible/credentials.yml"
+  - "credentials.yml"

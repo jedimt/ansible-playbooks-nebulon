@@ -1,0 +1,28 @@
+---
+# Example playbook for ansible-role-deploy-vms
+# ansible-playbook -i inventory/lenovo-brb.yml playbooks/deploy-vms/deploy_vms.yml
+
+# ===========================================================================
+# Deploy VMs to a vCenter server
+# ===========================================================================
+- name: Deploy VMs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+  tags: play_deploy_vms
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - { role: ansible-role-deploy-vms,
+        ansible_password: "{{ vault_ansible_password }}"
+    }

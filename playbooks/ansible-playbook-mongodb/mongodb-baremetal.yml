@@ -1,0 +1,96 @@
+---
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-mongodb/mongodb-baremetal.yml
+
+# To Do
+# Need to create role for installing and configuring metrics exporters for prometheus
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - { role: ansible-role-nebulon-create-npod,
+        npod_name: "mongoDB_Lenovo",
+        npod_template: "MongoDB",
+        npod_group: NoSqlDb }
+
+# Wait for hosts to boot up
+- name: Wait for hosts to reboot
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to come up - Minutes to wait {{ wait_hosts }}
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: servers
+  gather_facts: false
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - ansible-role-authorized-keys
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_ssh_sync
+
+  roles:
+    - ansible-role-ssh-update-known-hosts
+
+# ===========================================================================
+# Disable APT automatic updates/upgrades
+# ===========================================================================
+- name: Disable APT updates and upgrades
+  hosts: servers
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - ansible-role-apt-disable-background-tasks
+
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  tags: play_network_setup
+
+  roles:
+    - ansible-role-network-setup
+
+# ===========================================================================
+# Install and configure MongoDB
+# ===========================================================================
+- name: Install and configure MongoDB
+  hosts: mongo
+  tags: play_mongodb_install
+
+  roles:
+    - ansible-role-mongodb-install

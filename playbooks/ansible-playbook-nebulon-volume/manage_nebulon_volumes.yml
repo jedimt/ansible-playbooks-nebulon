@@ -1,0 +1,26 @@
+---
+# ===========================================================================
+# Manage Nebulon Volumes
+# ===========================================================================
+
+# Example invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-nebulon-volume/manage_nebulon_volumes.yml
+
+- name: Manage Nebulon Volumes
+  hosts: localhost
+  connection: local
+  tags: play_neb_vols
+  gather_facts: false
+
+  # module_defaults requires nebulon.nebulon_on version 1.2.1 or later
+  module_defaults:
+    group/nebulon.nebulon_on.nebulon:
+      neb_username: "{{ vault_neb_username }}"
+      neb_password: "{{ vault_neb_password }}"
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - { role: ansible-role-nebulon-manage-volumes }

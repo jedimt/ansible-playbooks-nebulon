@@ -1,0 +1,166 @@
+---
+# This playbook does a full end-to-end installation of a vSphere cluster.
+
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook.yml
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - { role: ansible-role-nebulon-create-npod,
+        npod_name: "{{ demopod }}_VMware",
+        npod_template: "ESXi 8.0",
+        npod_group: "vSphere"}
+
+# Wait for hosts to boot up
+- name: Wait for hosts to reboot
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to come up - Minutes to wait {{ wait_hosts }}
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Customize ESXi
+# ===========================================================================
+- name: Customize ESXi
+  hosts: vmware
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  vars:
+    ansible_python_interpreter: /bin/python
+    # Specifying the ansible_password variable to avoid password prompt or '-k' flag
+    ansible_password: "{{ vault_esxi_password }}"
+
+  roles:
+    - ansible-role-vmware-customize-esxi
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tags: play_ssh_sync
+
+  roles:
+    - ansible-role-ssh-update-known-hosts
+
+# ===========================================================================
+# Deploy embedded VCSA to ESXi host
+# ===========================================================================
+- name: Deploy a self-hosted VCSA on ESXi host
+  hosts: ['vmware[0]']
+  gather_facts: true
+  tags: play_vcsa_install
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - { role: ansible-role-vmware-vcsa-embedded-install,
+        vsphere_version: "8" }
+
+- name: Wait for VCSA installation to complete
+  hosts: vcsa
+  gather_facts: false
+  tags: play_vcsa_install_complete
+
+  vars:
+    ansible_python_interpreter: /bin/python
+    # Use ansible_password when no SSH keys installed on the VCSA.
+    ansible_password: "{{ vault_esxi_password }}"
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  tasks:
+
+    - name: Check for successful VCSA deployment
+      ansible.builtin.command:
+        ls /var/log/firstboot/succeeded
+      register: vcsa_status
+      retries: 30
+      delay: 20
+      until: vcsa_status is success
+      changed_when: false
+      tags: vcsa_test
+
+# ===========================================================================
+# Customize the VCSA installation
+# ===========================================================================
+- name: Customize VCSA
+  hosts: localhost
+  connection: local
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+    vmware_host:
+      datacenter_name: '{{ vcenter_datacenter }}'
+      cluster_name: '{{ vcenter_cluster }}'
+      esxi_username: '{{ esxi_username }}'
+      esxi_password: '{{ esxi_password }}'
+    vmware_host_service_manager:
+      cluster_name: '{{ vcenter_cluster }}'
+    vmware_host_config_manager:
+      cluster_name: '{{ vcenter_cluster }}'
+    vmware_datastore_info:
+      datacenter_name: '{{ vcenter_datacenter }}'
+
+  tags: play_vcsa_customize
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - ansible-role-vmware-vcsa-customization
+
+# ===========================================================================
+# Clone template VM to VCSA
+# ===========================================================================
+- name: Clone template VM to VCSA
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+  tags: play_clone_template
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "/home/apatt/github/demopod-ansible/credentials.yml"
+
+  roles:
+    - ansible-role-clone-template

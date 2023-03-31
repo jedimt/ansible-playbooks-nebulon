@@ -1,0 +1,114 @@
+# Server inventory (VMs) - used to deploy the VMs
+servers:
+  hosts:
+    hpe-k8s-haproxy-01.tme.nebulon.com:
+    hpe-k8s-master-01.tme.nebulon.com:
+    hpe-k8s-master-02.tme.nebulon.com:
+    hpe-k8s-master-03.tme.nebulon.com:
+    hpe-k8s-node-01.tme.nebulon.com:
+    hpe-k8s-node-02.tme.nebulon.com:
+    hpe-k8s-node-03.tme.nebulon.com:
+    hpe-k8s-node-04.tme.nebulon.com:
+
+# HA Proxy machine to support multi-master K8s deployments
+haproxy:
+  hosts:
+    hpe-k8s-haproxy-01.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.77'
+      guest_notes: "K8s HAProxy for multi-master"
+      size_gb: 40
+      memory_mb: 4096
+      guest_vcpu: 2
+
+# The primary (first) K8s control plane node. Only master/control node in
+# single master deployments
+k8s_master:
+  hosts:
+    hpe-k8s-master-01.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.78'
+      guest_notes: "Dev K8s control node"
+      size_gb: 40
+      memory_mb: 8192
+      guest_vcpu: 2
+      loadbalancer: "hpe-k8s-haproxy-01.tme.nebulon.com:6443"
+
+# The additional control plane K8s nodes
+k8s_control:
+  hosts:
+    hpe-k8s-master-02.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.79'
+      guest_notes: "Dev K8s control node"
+      size_gb: 40
+      memory_mb: 8192
+      guest_vcpu: 2
+    hpe-k8s-master-03.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.80'
+      guest_notes: "Dev K8s control node"
+      size_gb: 40
+      memory_mb: 8192
+      guest_vcpu: 2
+
+# K8s nodes
+k8s_nodes:
+  hosts:
+    hpe-k8s-node-01.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.81'
+      guest_notes: "Dev K8s worker node"
+      size_gb: 100
+      memory_mb: 8192
+      guest_vcpu: 4
+    hpe-k8s-node-02.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.82'
+      guest_notes: "Dev K8s worker node"
+      size_gb: 100
+      memory_mb: 8192
+      guest_vcpu: 4
+    hpe-k8s-node-03.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.83'
+      guest_notes: "Dev K8s worker node"
+      size_gb: 100
+      memory_mb: 8192
+      guest_vcpu: 4
+    hpe-k8s-node-04.tme.nebulon.com:
+      guest_custom_ip: '10.100.24.84'
+      guest_notes: "Dev K8s worker node"
+      size_gb: 100
+      memory_mb: 8192
+      guest_vcpu: 4
+
+# Inventory super-set for the K8s machines
+k8s:
+  hosts:
+    hpe-k8s-haproxy-01.tme.nebulon.com:
+    hpe-k8s-master-01.tme.nebulon.com:
+    hpe-k8s-master-02.tme.nebulon.com:
+    hpe-k8s-master-03.tme.nebulon.com:
+    hpe-k8s-node-01.tme.nebulon.com:
+    hpe-k8s-node-02.tme.nebulon.com:
+    hpe-k8s-node-03.tme.nebulon.com:
+    hpe-k8s-node-04.tme.nebulon.com:
+  children:
+    k8s_master:
+      hosts:
+         hpe-k8s-master-01.tme.nebulon.com:
+    k8s_control:
+      hosts:
+        hpe-k8s-master-02.tme.nebulon.com:
+        hpe-k8s-master-03.tme.nebulon.com:
+    k8s_nodes:
+      hosts:
+        hpe-k8s-node-01.tme.nebulon.com:
+        hpe-k8s-node-02.tme.nebulon.com:
+        hpe-k8s-node-03.tme.nebulon.com:
+        hpe-k8s-node-04.tme.nebulon.com:
+
+# Machine short names, used by vmware_csi.yml
+k8s_short:
+  hosts:
+    hpe-k8s-master-01:
+    hpe-k8s-master-02:
+    hpe-k8s-master-03:
+    hpe-k8s-node-01:
+    hpe-k8s-node-02:
+    hpe-k8s-node-03:
+    hpe-k8s-node-04:

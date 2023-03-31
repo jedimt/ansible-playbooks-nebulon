@@ -1,0 +1,6 @@
+.vscode
+.DS_Store
+ansible.log
+.vault_pass
+playbooks/vmware_image/files/config.yaml
+results

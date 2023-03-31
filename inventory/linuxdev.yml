@@ -1,0 +1,4 @@
+# Inventory file for the linuxdev VM
+all:
+  hosts:
+    linuxdev.tme.nebulon.com:

@@ -1,0 +1,15 @@
+---
+# ===========================================================================
+# Create VCSA OVF file from vCenter ISO
+# ===========================================================================
+
+# Example invocation:
+# ansible-playbook -i inventory/linuxdev.yml playbooks/ansible-playbook-vcenter-ovf/create_vcsa_ovf.yml
+
+- name: Create VCSA OVF file
+  hosts: all
+  gather_facts: true
+  tags: play_vcsa_ovf
+
+  roles:
+    - { role: ansible-role-vcenter-ovf, vcenter_iso_file: "VMware-VCSA-all-8.0.0-21216066.iso" }
