@@ -23,7 +23,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - { role: ansible-role-deploy-vms,
@@ -40,7 +40,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     # If passwordless SSH not set up, use ansible_password to authenticate
@@ -58,7 +58,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - ansible-role-authorized-keys
@@ -107,7 +107,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - ansible-role-kubernetes-prep
@@ -121,7 +121,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - ansible-role-kubernetes-create-cluster
@@ -161,7 +161,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - ansible-role-kubernetes-network-plugin
@@ -175,7 +175,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - ansible-role-kubernetes-join-nodes
@@ -202,7 +202,7 @@
 
   vars_files:
     # Ansible vault with all required passwords
-    - "/home/apatt/github/demopod-ansible/credentials.yml"
+    - "../../credentials.yml"
 
   roles:
     - { role: ansible-role-vmware-csi-deploy,

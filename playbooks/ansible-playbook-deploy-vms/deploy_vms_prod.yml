@@ -1,7 +1,6 @@
 ---
 # Example playbook for ansible-role-deploy-vms
-# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-deploy-vms/deploy_vms.yml
-# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-deploy-vms/deploy_vms.yml
+# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-deploy-vms/deploy_vms_prod.yml
 
 # ===========================================================================
 # Deploy VMs to a vCenter server
@@ -25,5 +24,20 @@
 
   roles:
     - { role: ansible-role-deploy-vms,
-        ansible_password: "{{ vault_ansible_password }}"
+        ansible_password: "{{ vault_ansible_password }}",
+
+        # vCenter datacenter to deploy VMs to
+        vcenter_datacenter: 'SantaClara',
+
+        # Folder where the VMs should be deployed
+        vcenter_folder: '/{{ vcenter_datacenter }}/vm/Ansible',
+
+        # vCenter cluster to use
+        vcenter_cluster: 'Production',
+
+        # vCenter IP or FQDN
+        vcenter_hostname: 'tmevcsa.sc0.nebulon.com',
+
+        # The VM network name to attach to the VM
+        guest_network: 'VM Network'
     }
