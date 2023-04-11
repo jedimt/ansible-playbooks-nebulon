@@ -3,7 +3,7 @@
 # including the VMware CSI driver and Kube-Prometheus.
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_phase2.yml
+# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_phase2_vsphere8.yml
 
 # ===========================================================================
 # Deploy VMs
