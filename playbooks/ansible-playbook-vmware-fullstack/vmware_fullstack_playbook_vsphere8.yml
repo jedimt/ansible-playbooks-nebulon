@@ -79,6 +79,9 @@
     # Ansible vault with all required passwords
     - "../../credentials.yml"
 
+  vars:
+    ansible_python_interpreter: /usr/bin/python3 # required if "python" is not symlinked to python3
+
   roles:
     - { role: jedimt.vmware_vcsa_embedded_install,
         vsphere_version: "8" }
