@@ -1,0 +1,128 @@
+---
+# Example playbook for ansible-role-deploy-vms
+# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-ansible-vm/deploy_ansible_vm.yml
+
+# ===========================================================================
+# Deploy an Ansible controller VM to a vCenter server
+# ===========================================================================
+- name: Deploy VMs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+  tags: play_deploy_vms
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: ansible-role-deploy-vms,
+        ansible_password: "{{ vault_ansible_password }}",
+        vcenter_datacenter: 'SantaClara',
+        vcenter_folder: '/{{ vcenter_datacenter }}/vm/Ansible',
+        vcenter_cluster: 'Production',
+        vcenter_hostname: 'tmevcsa.sc0.nebulon.com',
+        guest_network: 'VM Network',
+        guest_template: 'ubuntu22.04.2_local'
+    }
+    # - { role: ansible-role-ssh-update-known-hosts
+    # }
+
+# ===========================================================================
+# Update known hosts file
+# ===========================================================================
+- name: Sync known hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+  tags: play_ssh_sync
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: ansible-role-ssh-update-known-hosts
+    }
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: servers
+  gather_facts: false
+  become: false
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-authorized-keys
+
+# ===========================================================================
+# Install prerequisite packages and software
+# ===========================================================================
+# - name: Install prerequisite packages and software
+#   hosts: servers
+#   gather_facts: true
+#   become: false
+#   tags: play_prereq_install
+
+#   vars_files:
+#     # Ansible vault with all required passwords
+#     - "../../credentials.yml"
+
+#   roles:
+#     - ansible-role-python
+
+# ===========================================================================
+# Install and configure Ansible
+# ===========================================================================
+- name: Install and configure Ansible on Ansible controller
+  hosts: servers
+  gather_facts: true
+  become: false
+  tags: play_ansible_install
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - geerlingguy.ansible
+
+  tasks:
+    - name: Create directory for repo
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/github"
+        state: directory
+        mode: '0644'
+
+    - name: Clone Ansible TME repo
+      ansible.builtin.git:
+        repo: 'https://github.com/jedimt/ansible-playbooks-nebulon.git'
+        dest: "{{ ansible_env.HOME }}/github"
+        version: master
+      tags: git
+
+    - name: Create Ansible vault password file
+      ansible.builtin.copy:
+        dest: "{{ ansible_env.HOME }}/github/.vault_pass"
+        content: "{{ vault_vault_password }}"
+        mode: '0644'
