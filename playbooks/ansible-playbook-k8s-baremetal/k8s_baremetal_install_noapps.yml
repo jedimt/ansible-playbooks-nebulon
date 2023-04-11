@@ -1,0 +1,176 @@
+---
+
+# This playbook does a full end-to-end installation of a bare metal Kubernetes cluster
+
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-k8s-baremetal/k8s_baremetal_install_noapps.yml
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: ansible-role-nebulon-create-npod, npod_name: "K8s_Lenovo" }
+
+# Wait for hosts to boot up
+- name: Wait for hosts to reboot
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to come up - Minutes to wait {{ wait_hosts }}
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: servers
+  gather_facts: false
+  become: false
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-authorized-keys
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tags: play_ssh_sync
+
+  roles:
+    - ansible-role-ssh-update-known-hosts
+
+# ===========================================================================
+# Disable APT automatic updates/upgrades
+# ===========================================================================
+- name: Disable APT updates and upgrades
+  hosts: servers
+  gather_facts: false
+
+  roles:
+    - ansible-role-apt-disable-background-tasks
+
+# ===========================================================================
+# Configure Vim
+# ===========================================================================
+- name: Install Vim plugins
+  hosts: servers
+  gather_facts: true
+  tags: play_vim
+
+  roles:
+    - ansible-role-vim
+
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  tags: play_network_setup
+
+  roles:
+    - ansible-role-network-setup
+
+# ===========================================================================
+# Kubernetes pre-install tasks
+# ===========================================================================
+- name: Kubernetes pre-install tasks
+  hosts: servers
+  tags: k8s
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-kubernetes-prep
+
+# ===========================================================================
+# Create Kubernetes cluster
+# ===========================================================================
+- name: Create Kubernetes cluster
+  hosts: k8s_master
+  tags: play_create_k8s_cluster
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-kubernetes-create-cluster
+
+# ===========================================================================
+# Install K8s CNI
+# ===========================================================================
+- name: Install K8s networking plugin
+  hosts: k8s_master
+  tags: play_k8s_network
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-kubernetes-network-plugin
+
+# ===========================================================================
+# Join nodes to Kubernetes cluster
+# ===========================================================================
+- name: Join Kubernetes nodes to cluster
+  hosts: k8s_nodes
+  tags: play_k8s_nodes
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-kubernetes-join-nodes
+
+# ===========================================================================
+# Install MetalLB L2 load balancer
+# ===========================================================================
+- name: Install MetalLB load balancer
+  hosts: k8s_master
+  become: true
+  tags: play_metallb
+
+  roles:
+    - ansible-role-kubernetes-metallb
+
+# ===========================================================================
+# Install the Nebulon CSI driver
+# ===========================================================================
+- name: Nebulon CSI driver install
+  hosts: k8s_master
+  become: true
+  gather_facts: false
+  tags: play_nebulon_csi
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - ansible-role-helm-install
+    - ansible-role-nebulon-csi-install
