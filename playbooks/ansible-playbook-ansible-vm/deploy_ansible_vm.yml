@@ -34,6 +34,24 @@
     }
 
 # ===========================================================================
+# Customize VMs
+# ===========================================================================
+- name: Customize deployed VMs
+  hosts: servers
+  gather_facts: false
+  tags: play_customize_vms
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    # If passwordless SSH not set up, use ansible_password to authenticate
+    - { role: jedimt.customize_vms,
+        ansible_password: "{{ vault_ansible_password }}"
+    }
+
+# ===========================================================================
 # Update known hosts file
 # ===========================================================================
 - name: Sync known hosts
@@ -80,6 +98,9 @@
     # Ansible vault with all required passwords
     - "../../credentials.yml"
 
+  vars:
+    ovf_url: "http://homes.sc0.nebulon.com/aaron/files/vmware/ovftool45/VMware-ovftool-4.5.0-20459872-lin.x86_64.zip"
+
   tasks:
     - name: Install Python modules
       ansible.builtin.pip:
@@ -91,7 +112,26 @@
       ansible.builtin.apt:
         name:
           - sshpass
+          - unzip
         state: present
+
+    # This set of steps should be turned into a role in the future
+    - name: Download OVFTool
+      ansible.builtin.unarchive:
+        src: "{{ ovf_url }}" # This assumes the package is on a web server in the environment
+        dest: /usr/bin/
+        mode: '0755'
+        remote_src: true
+
+    # - name: Add another bin dir to system-wide $PATH.
+    #   ansible.builtin.lineinfile:
+    #     dest: "/etc/environment"
+    #     state: present
+    #     regexp: '^(PATH=\")({{ new_path }}:)?((?(2).*?(?!(?:.\"))|.*?(?!(?:{{ new_path }}))))(:{{ new_path }})?((?(4).*|\"))'
+    #     line: '\1\3:{{ new_path }}\5'
+    #     backrefs: true
+    #   vars:
+    #     new_path: /usr/bin/
 
 # ===========================================================================
 # Install and configure Ansible
