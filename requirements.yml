@@ -7,25 +7,25 @@ roles:
   - name: jedimt.clone_template
   - name: jedimt.customize_vms
   - name: jedimt.deploy_vms
-  - name: jedimt.golang_install
+  - name: jedimt.golang
   - name: jedimt.haproxy
-  - name: jedimt.helm_install
+  - name: jedimt.helm
   - name: jedimt.kubernetes_create_cluster
   - name: jedimt.kubernetes_join_nodes
   - name: jedimt.kubernetes_kube_prometheus
   - name: jedimt.kubernetes_metallb
-  - name: jedimt.kubernetes_network_plugin
+  - name: jedimt.kubernetes_cni
   - name: jedimt.kubernetes_nginx_ingress
   - name: jedimt.kubernetes_prep
-  - name: jedimt.mongodb_install
+  - name: jedimt.mongodb
   - name: jedimt.nebulon_create_npod
-  - name: jedimt.nebulon_csi_install
+  - name: jedimt.nebulon_csi
   - name: jedimt.nebulon_manage_volumes
   - name: jedimt.network_setup
-  - name: jedimt.ssh_update_known_hosts
+  - name: jedimt.ssh
   - name: jedimt.vcenter_ovf
   - name: jedimt.vim
-  - name: jedimt.vmware_csi_deploy
+  - name: jedimt.vmware_csi
   - name: jedimt.vmware_customize_esxi
   - name: jedimt.vmware_vcsa_customization
   - name: jedimt.vmware_vcsa_embedded_install
