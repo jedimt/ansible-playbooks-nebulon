@@ -2,12 +2,11 @@
 # Requirements file for ansible-playbooks-nebulon repo. Used for testing purposes
 
 roles:
-  - name: jedimt.apt_disable_background_tasks
+  - name: jedimt.apt
   - name: jedimt.authorized_keys
   - name: jedimt.clone_template
   - name: jedimt.customize_vms
   - name: jedimt.deploy_vms
-  - name: jedimt.dualhome_routing
   - name: jedimt.golang_install
   - name: jedimt.haproxy
   - name: jedimt.helm_install
