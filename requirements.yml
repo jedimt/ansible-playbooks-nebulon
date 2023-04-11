@@ -1,0 +1,37 @@
+---
+# Requirements file for ansible-playbooks-nebulon repo. Used for testing purposes
+
+roles:
+  - name: ansible-role-apt-disable-background-tasks
+  - name: ansible-role-authorized-keys
+  - name: ansible-role-clone-template
+  - name: ansible-role-cloud-init
+  - name: ansible-role-customize-vms
+  - name: ansible-role-deploy-vms
+  - name: ansible-role-dualhome-routing
+  - name: ansible-role-golang-install
+  - name: ansible-role-haproxy
+  - name: ansible-role-helm-install
+  - name: ansible-role-kadalu
+  - name: ansible-role-kubernetes-create-cluster
+  - name: ansible-role-kubernetes-join-nodes
+  - name: ansible-role-kubernetes-kube-prometheus
+  - name: ansible-role-kubernetes-metallb
+  - name: ansible-role-kubernetes-network-plugin
+  - name: ansible-role-kubernetes-nginx-ingress
+  - name: ansible-role-kubernetes-prep
+  - name: ansible-role-linux-add-scsi-dev
+  - name: ansible-role-mongodb-install
+  - name: ansible-role-nebulon-create-npod
+  - name: ansible-role-nebulon-csi-install
+  - name: ansible-role-nebulon-manage-volumes
+  - name: ansible-role-network-setup
+  - name: ansible-role-ssh-update-known-hosts
+  - name: ansible-role-vcenter-ovf
+  - name: ansible-role-vim
+  - name: ansible-role-vmware-config-file
+  - name: ansible-role-vmware-csi-deploy
+  - name: ansible-role-vmware-customize-esxi
+  - name: ansible-role-vmware-vcsa-customization
+  - name: ansible-role-vmware-vcsa-embedded-install
+  - name: ansible-role-wordpress
