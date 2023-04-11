@@ -30,3 +30,6 @@ roles:
   - name: jedimt.vmware_vcsa_customization
   - name: jedimt.vmware_vcsa_embedded_install
   - name: jedimt.wordpress
+
+collections:
+  - name: nebulon.nebulon_on
