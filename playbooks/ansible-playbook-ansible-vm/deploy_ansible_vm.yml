@@ -1,6 +1,6 @@
 ---
 # Example playbook for ansible-role-deploy-vms
-# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-ansible-vm/deploy_ansible_vm.yml
+# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbooks-ansible-vm/deploy_ansible_vm.yml
 
 # ===========================================================================
 # Deploy an Ansible controller VM to a vCenter server
@@ -23,7 +23,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-deploy-vms,
+    - { role: jedimt.deploy_vms,
         ansible_password: "{{ vault_ansible_password }}",
         vcenter_datacenter: 'SantaClara',
         vcenter_folder: '/{{ vcenter_datacenter }}/vm/Ansible',
@@ -32,8 +32,6 @@
         guest_network: 'VM Network',
         guest_template: 'ubuntu22.04.2_local'
     }
-    # - { role: ansible-role-ssh-update-known-hosts
-    # }
 
 # ===========================================================================
 # Update known hosts file
@@ -56,7 +54,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-ssh-update-known-hosts
+    - { role: jedimt.ssh
     }
 
 # ===========================================================================
@@ -73,23 +71,27 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-authorized-keys
+    - jedimt.authorized_keys
 
 # ===========================================================================
 # Install prerequisite packages and software
 # ===========================================================================
-# - name: Install prerequisite packages and software
-#   hosts: servers
-#   gather_facts: true
-#   become: false
-#   tags: play_prereq_install
+- name: Install prerequisite packages and software
+  hosts: servers
+  gather_facts: true
+  become: false
+  tags: play_prereq_install
 
-#   vars_files:
-#     # Ansible vault with all required passwords
-#     - "../../credentials.yml"
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
 
-#   roles:
-#     - ansible-role-python
+  tasks:
+    - name: Install Python modules
+      ansible.builtin.pip:
+        name:
+          - nebpyclient==2.0.10
+          - pyvmomi==8.0.0.1.2
 
 # ===========================================================================
 # Install and configure Ansible

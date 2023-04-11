@@ -4,7 +4,7 @@
 # ===========================================================================
 
 # Example invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-nebulon-volume/manage_nebulon_volumes.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-nebulon-volume/manage_nebulon_volumes.yml
 
 - name: Manage Nebulon Volumes
   hosts: localhost
@@ -23,4 +23,4 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-nebulon-manage-volumes }
+    - { role: jedimt.nebulon_manage_volumes }

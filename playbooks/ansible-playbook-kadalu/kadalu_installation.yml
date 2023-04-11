@@ -71,7 +71,7 @@
         state: "{{ volume_state }}"
 
   roles:
-    - { role: ansible-role-nebulon-manage-volumes }
+    - { role: jedimt.nebulon_manage_volumes }
 
   # tasks:
   #   - name: Find WWN for new volumes from Nebulon ON

@@ -1,6 +1,6 @@
 ---
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-mongodb/mongodb-baremetal.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-mongodb/mongodb-baremetal.yml
 
 # To Do
 # Need to create role for installing and configuring metrics exporters for prometheus
@@ -19,7 +19,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-nebulon-create-npod,
+    - { role: jedimt.nebulon_create_npod,
         npod_name: "mongoDB_Lenovo",
         npod_template: "MongoDB",
         npod_group: NoSqlDb }
@@ -47,7 +47,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-authorized-keys
+    - jedimt.authorized_keys
 
 # ===========================================================================
 # Update Ansible controller SSH keys
@@ -59,7 +59,7 @@
   tags: play_ssh_sync
 
   roles:
-    - ansible-role-ssh-update-known-hosts
+    - jedimt.ssh
 
 # ===========================================================================
 # Disable APT automatic updates/upgrades
@@ -73,7 +73,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-apt-disable-background-tasks
+    - jedimt.apt
 
 # ===========================================================================
 # Network configuration
@@ -83,7 +83,7 @@
   tags: play_network_setup
 
   roles:
-    - ansible-role-network-setup
+    - jedimt.network_setup
 
 # ===========================================================================
 # Install and configure MongoDB
@@ -93,4 +93,4 @@
   tags: play_mongodb_install
 
   roles:
-    - ansible-role-mongodb-install
+    - jedimt.mongodb

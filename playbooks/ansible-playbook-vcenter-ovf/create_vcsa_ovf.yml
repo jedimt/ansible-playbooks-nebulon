@@ -4,7 +4,7 @@
 # ===========================================================================
 
 # Example invocation:
-# ansible-playbook -i inventory/linuxdev.yml playbooks/ansible-playbook-vcenter-ovf/create_vcsa_ovf.yml
+# ansible-playbook -i inventory/linuxdev.yml playbooks/ansible-playbooks-vcenter-ovf/create_vcsa_ovf.yml
 
 - name: Create VCSA OVF file
   hosts: all
@@ -12,4 +12,4 @@
   tags: play_vcsa_ovf
 
   roles:
-    - { role: ansible-role-vcenter-ovf, vcenter_iso_file: "VMware-VCSA-all-8.0.0-21216066.iso" }
+    - { role: jedimt.vcenter_ovf, vcenter_iso_file: "VMware-VCSA-all-8.0.0-21216066.iso" }

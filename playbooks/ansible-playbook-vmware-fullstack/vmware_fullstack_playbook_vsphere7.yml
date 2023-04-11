@@ -2,8 +2,8 @@
 # This playbook does a full end-to-end installation of a vSphere cluster.
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_vsphere7.yml
-# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_vsphere7.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-vmware-fullstack/vmware_fullstack_playbook_vsphere7.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbooks-vmware-fullstack/vmware_fullstack_playbook_vsphere7.yml
 
 # ===========================================================================
 # Create Nebulon nPod
@@ -19,7 +19,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-nebulon-create-npod,
+    - { role: jedimt.nebulon_create_npod,
         npod_name: "{{ demopod }}_VMware",
         npod_template: "ESXi 7.0 U3",
         npod_group: "vSphere"}
@@ -52,7 +52,7 @@
     ansible_password: "{{ vault_esxi_password }}"
 
   roles:
-    - ansible-role-vmware-customize-esxi
+    - jedimt.vmware_customize_esxi
 
 # ===========================================================================
 # Update Ansible controller SSH keys
@@ -65,7 +65,7 @@
   tags: play_ssh_sync
 
   roles:
-    - ansible-role-ssh-update-known-hosts
+    - jedimt.ssh
 
 # ===========================================================================
 # Deploy embedded VCSA to ESXi host
@@ -80,7 +80,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-vmware-vcsa-embedded-install,
+    - { role: jedimt.vmware_vcsa_embedded_install,
         vsphere_version: "7" }
 
 - name: Wait for VCSA installation to complete
@@ -140,7 +140,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-vmware-vcsa-customization
+    - jedimt.vmware_vcsa_customization
 
 # ===========================================================================
 # Clone template VM to VCSA
@@ -163,4 +163,4 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-clone-template
+    - jedimt.clone_template

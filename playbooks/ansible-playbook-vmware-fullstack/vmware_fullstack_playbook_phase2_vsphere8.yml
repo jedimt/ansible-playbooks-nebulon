@@ -3,7 +3,7 @@
 # including the VMware CSI driver and Kube-Prometheus.
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_phase2_vsphere8.yml
+# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbooks-vmware-fullstack/vmware_fullstack_playbook_phase2_vsphere8.yml
 
 # ===========================================================================
 # Deploy VMs
@@ -26,7 +26,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-deploy-vms,
+    - { role: jedimt.deploy_vms,
         ansible_password: "{{ vault_ansible_password }}"
     }
 
@@ -44,7 +44,7 @@
 
   roles:
     # If passwordless SSH not set up, use ansible_password to authenticate
-    - { role: ansible-role-customize-vms,
+    - { role: jedimt.customize_vms,
         ansible_password: "{{ vault_ansible_password }}"
     }
 
@@ -61,7 +61,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-authorized-keys
+    - jedimt.authorized_keys
 
 # ===========================================================================
 # Update Ansible controller SSH keys
@@ -74,7 +74,7 @@
   tags: play_ssh_sync
 
   roles:
-    - ansible-role-ssh-update-known-hosts
+    - jedimt.ssh
 
 # ===========================================================================
 # Disable APT automatic updates/upgrades
@@ -84,7 +84,7 @@
   gather_facts: false
 
   roles:
-    - ansible-role-apt-disable-background-tasks
+    - jedimt.apt
 
 # ===========================================================================
 # Install HAProxy on a VM
@@ -95,7 +95,7 @@
   tags: play_haproxy
 
   roles:
-    - ansible-role-haproxy
+    - jedimt.haproxy
 
 
 # ===========================================================================
@@ -110,7 +110,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-prep
+    - jedimt.kubernetes_prep
 
 # ===========================================================================
 # Create Kubernetes cluster
@@ -124,7 +124,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-create-cluster
+    - jedimt.kubernetes_create_cluster
 
 # This play will only fire when multiple control nodes are to be configured
 - name: Join additional control nodes to K8s cluster
@@ -164,7 +164,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-network-plugin
+    - jedimt.kubernetes_cni
 
 # ===========================================================================
 # Join nodes to Kubernetes cluster
@@ -178,7 +178,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-join-nodes
+    - jedimt.kubernetes_join_nodes
 
 # ===========================================================================
 # Install MetalLB L2 load balancer
@@ -189,7 +189,7 @@
   tags: play_metallb
 
   roles:
-    - ansible-role-kubernetes-metallb
+    - jedimt.kubernetes_metallb
 
 # ===========================================================================
 # Install the VMware CSI driver
@@ -205,7 +205,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-vmware-csi-deploy,
+    - { role: jedimt.vmware_csi,
         vcenter_ip: "10.100.24.31",
         vcenter_hostname: "devvcsa.tme.nebulon.com",
         vcenter_datacenter: "SC0"
@@ -221,8 +221,8 @@
   tags: play_nginx
 
   roles:
-    - ansible-role-helm-install
-    - ansible-role-kubernetes-nginx-ingress
+    - jedimt.helm
+    - jedimt.kubernetes_nginx_ingress
 
 # ===========================================================================
 # Install Kube-Prometheus
@@ -234,7 +234,7 @@
   tags: play_prometheus
 
   roles:
-    - ansible-role-golang-install
-    - { role: ansible-role-kubernetes-kube-prometheus,
+    - jedimt.golang
+    - { role: jedimt.kubernetes_kube_prometheus,
         storage_class: "vmw-block-sc"
     }

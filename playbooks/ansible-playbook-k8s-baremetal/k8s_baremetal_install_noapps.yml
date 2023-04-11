@@ -3,7 +3,7 @@
 # This playbook does a full end-to-end installation of a bare metal Kubernetes cluster
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-k8s-baremetal/k8s_baremetal_install_noapps.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-k8s-baremetal/k8s_baremetal_install_noapps.yml
 
 # ===========================================================================
 # Create Nebulon nPod
@@ -19,7 +19,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-nebulon-create-npod, npod_name: "K8s_Lenovo" }
+    - { role: jedimt.nebulon_create_npod, npod_name: "K8s_Lenovo" }
 
 # Wait for hosts to boot up
 - name: Wait for hosts to reboot
@@ -45,7 +45,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-authorized-keys
+    - jedimt.authorized_keys
 
 # ===========================================================================
 # Update Ansible controller SSH keys
@@ -58,7 +58,7 @@
   tags: play_ssh_sync
 
   roles:
-    - ansible-role-ssh-update-known-hosts
+    - jedimt.ssh
 
 # ===========================================================================
 # Disable APT automatic updates/upgrades
@@ -68,7 +68,7 @@
   gather_facts: false
 
   roles:
-    - ansible-role-apt-disable-background-tasks
+    - jedimt.apt
 
 # ===========================================================================
 # Configure Vim
@@ -79,7 +79,7 @@
   tags: play_vim
 
   roles:
-    - ansible-role-vim
+    - jedimt.vim
 
 # ===========================================================================
 # Network configuration
@@ -89,7 +89,7 @@
   tags: play_network_setup
 
   roles:
-    - ansible-role-network-setup
+    - jedimt.network_setup
 
 # ===========================================================================
 # Kubernetes pre-install tasks
@@ -103,7 +103,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-prep
+    - jedimt.kubernetes_prep
 
 # ===========================================================================
 # Create Kubernetes cluster
@@ -117,7 +117,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-create-cluster
+    - jedimt.kubernetes_create_cluster
 
 # ===========================================================================
 # Install K8s CNI
@@ -131,7 +131,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-network-plugin
+    - jedimt.kubernetes_cni
 
 # ===========================================================================
 # Join nodes to Kubernetes cluster
@@ -145,7 +145,7 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-kubernetes-join-nodes
+    - jedimt.kubernetes_join_nodes
 
 # ===========================================================================
 # Install MetalLB L2 load balancer
@@ -156,7 +156,7 @@
   tags: play_metallb
 
   roles:
-    - ansible-role-kubernetes-metallb
+    - jedimt.kubernetes_metallb
 
 # ===========================================================================
 # Install the Nebulon CSI driver
@@ -172,5 +172,5 @@
     - "../../credentials.yml"
 
   roles:
-    - ansible-role-helm-install
-    - ansible-role-nebulon-csi-install
+    - jedimt.helm
+    - jedimt.nebulon_csi

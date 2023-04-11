@@ -6,8 +6,8 @@
 
 # Example invocation:
 
-# Create: ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-wordpress/deploy-wordpress.yml
-# Remove: ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-wordpress/deploy-wordpress.yml -e state=absent
+# Create: ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-wordpress/deploy-wordpress.yml
+# Remove: ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-wordpress/deploy-wordpress.yml -e state=absent
 
 - name: Wordpress Install
   hosts: k8s_master
@@ -35,4 +35,4 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-wordpress }
+    - { role: jedimt.wordpress }
