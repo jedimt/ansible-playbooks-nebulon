@@ -1,6 +1,6 @@
 ---
 # Example playbook for ansible-role-deploy-vms
-# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbooks-deploy-vms/deploy_vms_prod.yml
+# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-deploy-vms/deploy_vms_prod.yml
 
 # ===========================================================================
 # Deploy VMs to a vCenter server

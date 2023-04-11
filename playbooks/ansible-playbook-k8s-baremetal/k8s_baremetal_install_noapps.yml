@@ -3,7 +3,7 @@
 # This playbook does a full end-to-end installation of a bare metal Kubernetes cluster
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-k8s-baremetal/k8s_baremetal_install_noapps.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-k8s-baremetal/k8s_baremetal_install_noapps.yml
 
 # ===========================================================================
 # Create Nebulon nPod

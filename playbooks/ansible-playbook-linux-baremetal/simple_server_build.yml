@@ -1,6 +1,6 @@
 ---
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-linux-baremetal/simple_server_build.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-linux-baremetal/simple_server_build.yml
 
 # ===========================================================================
 # Create Nebulon nPod

@@ -1,7 +1,7 @@
 ---
 # Example playbook for jedimt.deploy_vms
-# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbooks-deploy-vms/deploy_vms.yml
-# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbooks-deploy-vms/deploy_vms.yml
+# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-deploy-vms/deploy_vms.yml
+# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-deploy-vms/deploy_vms.yml
 
 # ===========================================================================
 # Deploy VMs to a vCenter server

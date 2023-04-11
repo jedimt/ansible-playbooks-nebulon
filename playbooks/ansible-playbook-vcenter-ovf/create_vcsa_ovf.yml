@@ -4,7 +4,7 @@
 # ===========================================================================
 
 # Example invocation:
-# ansible-playbook -i inventory/linuxdev.yml playbooks/ansible-playbooks-vcenter-ovf/create_vcsa_ovf.yml
+# ansible-playbook -i inventory/linuxdev.yml playbooks/ansible-playbook-vcenter-ovf/create_vcsa_ovf.yml
 
 - name: Create VCSA OVF file
   hosts: all

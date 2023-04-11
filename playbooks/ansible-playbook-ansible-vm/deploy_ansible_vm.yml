@@ -1,6 +1,6 @@
 ---
 # Example playbook for ansible-role-deploy-vms
-# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbooks-ansible-vm/deploy_ansible_vm.yml
+# ansible-playbook -i inventory/ansible-vm.yml playbooks/ansible-playbook-ansible-vm/deploy_ansible_vm.yml
 
 # ===========================================================================
 # Deploy an Ansible controller VM to a vCenter server
@@ -41,12 +41,6 @@
   connection: local
   gather_facts: false
   become: false
-  module_defaults:
-    group/vmware:
-      hostname: '{{ vcenter_hostname }}'
-      username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
-      validate_certs: false
   tags: play_ssh_sync
 
   vars_files:
@@ -90,8 +84,14 @@
     - name: Install Python modules
       ansible.builtin.pip:
         name:
-          - nebpyclient==2.0.10
+          - nebpyclient==2.0.8
           - pyvmomi==8.0.0.1.2
+
+    - name: Install Apt packages
+      ansible.builtin.apt:
+        name:
+          - sshpass
+        state: present
 
 # ===========================================================================
 # Install and configure Ansible
@@ -128,3 +128,9 @@
         dest: "{{ ansible_env.HOME }}/github/.vault_pass"
         content: "{{ vault_vault_password }}"
         mode: '0644'
+
+    # To-do: This isn't installing the Nebulon collection for some reason.
+    - name: Install required collections and roles from Galaxy
+      community.general.ansible_galaxy_install:
+        type: both
+        requirements_file: "{{ ansible_env.HOME }}/github/requirements.yml"

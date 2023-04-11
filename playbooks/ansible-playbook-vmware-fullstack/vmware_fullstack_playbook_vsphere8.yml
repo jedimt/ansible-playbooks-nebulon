@@ -2,8 +2,8 @@
 # This playbook does a full end-to-end installation of a vSphere cluster.
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-vmware-fullstack/vmware_fullstack_playbook_vsphere8.yml
-# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbooks-vmware-fullstack/vmware_fullstack_playbook_vsphere8.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_vsphere8.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_vsphere8.yml
 
 # ===========================================================================
 # Create Nebulon nPod

@@ -4,7 +4,7 @@
 # including the Nebulon CSI driver and Kube-Prometheus.
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-k8s-baremetal/k8s_baremetal_install.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-k8s-baremetal/k8s_baremetal_install.yml
 
 # ===========================================================================
 # Create Nebulon nPod

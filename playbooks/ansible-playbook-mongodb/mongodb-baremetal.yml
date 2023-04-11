@@ -1,6 +1,6 @@
 ---
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbooks-mongodb/mongodb-baremetal.yml
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-mongodb/mongodb-baremetal.yml
 
 # To Do
 # Need to create role for installing and configuring metrics exporters for prometheus
