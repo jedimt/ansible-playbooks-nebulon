@@ -17,16 +17,16 @@ all:
 servers:
   hosts:
     server-05.tme.nebulon.com:
-      spu_serial: "{{ server-05-spu-serial }}"
+      spu_serial: 0123F7A8D51D48C819
       spu_address: 10.100.29.114
     server-06.tme.nebulon.com:
-      spu_serial: "{{ server-06-spu-serial }}"
+      spu_serial: 01238F123073C87119
       spu_address: 10.100.29.115
     server-07.tme.nebulon.com:
-      spu_serial: "{{ server-07-spu-serial }}"
+      spu_serial: 0123F5132F06C5C5EE
       spu_address: 10.100.29.116
     server-08.tme.nebulon.com:
-      spu_serial: "{{ server-08-spu-serial }}"
+      spu_serial: 0123237A9F163BAD19
       spu_address: 10.100.29.113
 ##### /VMware Bare Metal #####
 
