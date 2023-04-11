@@ -3,6 +3,6 @@ servers:
     ansible-vm.tme.nebulon.com:
       guest_custom_ip: '10.100.24.13'
       guest_notes: "Ansible Contoller VM"
-      size_gb: 40
+      size_gb: 60
       memory_mb: 4096
       guest_vcpu: 2
