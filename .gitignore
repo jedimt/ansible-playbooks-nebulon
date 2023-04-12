@@ -4,3 +4,5 @@ ansible.log
 .vault_pass
 playbooks/vmware_image/files/config.yaml
 results
+credentials.yml
+serials.yml
