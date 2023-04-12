@@ -10,6 +10,7 @@ roles:
   - name: jedimt.golang
   - name: jedimt.haproxy
   - name: jedimt.helm
+  - name: jedimt.kadalu
   - name: jedimt.kubernetes_create_cluster
   - name: jedimt.kubernetes_join_nodes
   - name: jedimt.kubernetes_kube_prometheus
@@ -17,6 +18,7 @@ roles:
   - name: jedimt.kubernetes_cni
   - name: jedimt.kubernetes_nginx_ingress
   - name: jedimt.kubernetes_prep
+  - name: jedimt.linux_add_scsi_dev
   - name: jedimt.mongodb
   - name: jedimt.nebulon_create_npod
   - name: jedimt.nebulon_csi
