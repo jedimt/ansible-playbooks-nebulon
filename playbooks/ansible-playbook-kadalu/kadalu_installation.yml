@@ -37,7 +37,7 @@
 
   roles:
     - { role: jedimt.nebulon_manage_volumes,
-        npod_name: "nPod_Lenovo" }
+        npod_name: "K8s_Lenovo" }
 
   # tasks:
   #   - name: Find WWN for new volumes from Nebulon ON
