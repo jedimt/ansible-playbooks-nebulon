@@ -1,7 +1,7 @@
 Playbook: Baremetal Kubernetes
 ==============================
 
-This playbook deploys a Kubernetes cluster from scratch along with the Nebulon CSI driver and the `kube-prometheus` project. It is an extensive and complicated playbook with may roles involved which may prove somewhat challenging when adapting this playbook.
+The playbook `k8s_baremetal_install.yml` deploys a Kubernetes cluster from scratch along with the Nebulon CSI driver and the `kube-prometheus` project. It is an extensive and complicated playbook with may roles involved which may prove somewhat challenging when adapting this playbook. The playbook `k8s_baremetal_install_noapps.yml` does the same workflow except it does install GoLang or deploy the kube-prometheus project.
 
 Prerequisites
 -------------
