@@ -1,0 +1,19 @@
+---
+
+roles:
+  - name: jedimt.nebulon_create_npod
+  - name: jedimt.authorized_keys
+  - name: jedimt.ssh
+  - name: jedimt.apt
+  - name: jedimt.vim
+  - name: jedimt.network_setup
+  - name: jedimt.kubernetes_prep
+  - name: jedimt.kubernetes_create_cluster
+  - name: jedimt.kubernetes_cni
+  - name: jedimt.kubernetes_join_nodes
+  - name: jedimt.kubernetes_metallb
+  - name: jedimt.helm
+  - name: jedimt.nebulon_csi
+  - name: jedimt.kubernetes_nginx_ingress
+  - name: jedimt.golang
+  - name: jedimt.kubernetes_kube_prometheus

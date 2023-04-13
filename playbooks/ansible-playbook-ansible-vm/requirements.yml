@@ -1,1 +1,9 @@
-- src: geerlingguy.ansible
+---
+
+roles:
+  - name: jedimt.authorized_keys
+  - name: jedimt.ssh
+  - name: jedimt.apt
+  - name: jedimt.deploy_vms
+  - name: jedimt.customize_vms
+  - name: geerlingguy.ansible
