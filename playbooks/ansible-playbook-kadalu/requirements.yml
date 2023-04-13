@@ -1,0 +1,6 @@
+---
+
+roles:
+  - name: jedimt.nebulon_manage_volumes
+  - name: jedimt.linux_add_scsi_dev
+  - name: jedimt.kadalu

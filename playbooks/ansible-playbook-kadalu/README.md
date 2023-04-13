@@ -1,3 +1,38 @@
+Playbook: Kadalu
+==============================
+
+This playbook installs the Kadalu project on a functional Kubernetes cluster.
+
+**_NOTE_**: This playbook and the `jedimt.linux_add_scsi_dev` and `jedimt.kadalu` roles are very "rough and ready". They are still very much a first effort and require more refinement to make them more broadly applicable.
+
+Prerequisites
+-------------
+
+This playbook makes the following assumptions:
+- There is a functional Kubernetes cluster to target
+- You have sufficient free capacity on the Nebulon nPod to create the volumes
+- You have appropriate permissions to both the Kubernetes cluster and nPod to perform provisioning actions
+
+Roles Used
+----------
+
+    - jedimt.nebulon_manage_volumes
+    - jedimt.linux_add_scsi_dev
+    - jedimt.kadalu
+
+Example Execution
+-----------------
+
+To execute this playbook, run the following command:
+
+    ansible-playbook -i inventory/<some_inventory>.yml playbooks/ansible-playbook-kadalu/kadalu_installation.yml
+
+Inventory
+---------
+
+This is the inventory file used in my environment:
+
+```yaml
 # Variables to use specific to localhost (for working with APIs)
 all:
   hosts:
@@ -28,6 +63,7 @@ servers:
     server-12.tme.nebulon.com:
       spu_serial: 01236AE13059FD35EE
       spu_address: 10.100.29.120
+##### /VMware Bare Metal #####
 
 ##### K8s Inventory #####
 # Physical inventory for bare metal K8s deployments
@@ -81,36 +117,6 @@ vcsa:
   hosts:
     devvcsa.tme.nebulon.com:
 
-# Cassandra
-cassandara:
-  hosts:
-    server-09.tme.nebulon.com:
-    server-10.tme.nebulon.com:
-    server-11.tme.nebulon.com:
-    server-12.tme.nebulon.com:
-
-cassandra_seed:
-  hosts:
-    server-09.tme.nebulon.com:
-
-# MongoDB
-mongo:
-  hosts:
-    server-09.tme.nebulon.com:
-    server-10.tme.nebulon.com:
-    server-11.tme.nebulon.com:
-    server-12.tme.nebulon.com:
-  children:
-    mongo_master:
-      hosts:
-        server-09.tme.nebulon.com:
-    mongo_replicas:
-      hosts:
-        server-10.tme.nebulon.com:
-        server-11.tme.nebulon.com:
-        server-12.tme.nebulon.com:
-
-# Redfish, used for iLOM tasks, like rebooting hosts
 redfish:
   hosts:
     server-09-lom.tme.nebulon.com:
@@ -134,3 +140,4 @@ myhosts:
     # Shorter name for inventory_hostname
     # Refers to the logical inventory hostname (example: redfish1)
     host: "{{ inventory_hostname }}"
+```

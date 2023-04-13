@@ -1,3 +1,38 @@
+Playbook: Baremetal MongoDB
+==============================
+
+This playbook deploys a Linux based nPod cluster from scratch and then installs MongoDB on top.
+
+Prerequisites
+-------------
+
+This playbook makes the following assumptions:
+- You have a Linux boot image already available in Nebulon ON and that this image boots up to a "usable" state without user intervention. In this case, "usable" means the server is available on the network once the nPod is built.
+- The roles in the `requirements.yml` file have been installed on the Ansible controller.
+
+Roles Used
+----------
+
+    - jedimt.nebulon_create_npod
+    - jedimt.authorized_keys
+    - jedimt.ssh
+    - jedimt.apt
+    - jedimt.vim
+    - jedimt.mongodb
+
+Example Execution
+-----------------
+
+To execute this playbook, run the following command:
+
+    ansible-playbook -i inventory/<some_inventory>.yml playbooks/ansible-playbook-mongodb/mongodb-baremetal.yml
+
+Inventory
+---------
+
+This is the inventory file used in my environment:
+
+```yaml
 # Variables to use specific to localhost (for working with APIs)
 all:
   hosts:
@@ -29,71 +64,7 @@ servers:
       spu_serial: 01236AE13059FD35EE
       spu_address: 10.100.29.120
 
-##### K8s Inventory #####
-# Physical inventory for bare metal K8s deployments
-k8s:
-  hosts:
-    server-09.tme.nebulon.com:
-    server-10.tme.nebulon.com:
-    server-11.tme.nebulon.com:
-    server-12.tme.nebulon.com:
-  children:
-    k8s_master:
-      hosts:
-        server-09.tme.nebulon.com:
-    k8s_nodes:
-      hosts:
-        server-10.tme.nebulon.com:
-        server-11.tme.nebulon.com:
-        server-12.tme.nebulon.com:
-##### /K8s Inventory #####
-
-spus:
-  hosts:
-    medusa-b0421.tme.nebulon.com:
-    medusa-b0428.tme.nebulon.com:
-    medusa-a912.tme.nebulon.com:
-    medusa-a915.tme.nebulon.com:
-  vars:
-    ansible_python_interpreter: auto_silent
-
-# VMware Bare metal
-vmware:
-  hosts:
-    server-09.tme.nebulon.com:
-    server-10.tme.nebulon.com:
-    server-11.tme.nebulon.com:
-    server-12.tme.nebulon.com:
-  vars:
-    vcsa_name: "devvcsa.tme.nebulon.com"
-    vcsa_size: "small"
-    vcenter_ip: 10.100.24.31
-    vcsa_gw: 10.100.24.1
-    vcsa_cidr: 22
-    vcsa_dns: 10.100.72.10
-    vcsa_ntp: 10.100.72.10
-    vcsa_sso_domain: "vsphere.local"
-    vcsa_sso_password: "{{ vault_vcsa_sso_password }}"
-    vcsa_password: "{{ vault_vcsa_sso_password }}"
-    vcsa_network: "VM Network"
-# VCSA
-vcsa:
-  hosts:
-    devvcsa.tme.nebulon.com:
-
-# Cassandra
-cassandara:
-  hosts:
-    server-09.tme.nebulon.com:
-    server-10.tme.nebulon.com:
-    server-11.tme.nebulon.com:
-    server-12.tme.nebulon.com:
-
-cassandra_seed:
-  hosts:
-    server-09.tme.nebulon.com:
-
-# MongoDB
+# MongoDB hosts
 mongo:
   hosts:
     server-09.tme.nebulon.com:
@@ -110,7 +81,16 @@ mongo:
         server-11.tme.nebulon.com:
         server-12.tme.nebulon.com:
 
-# Redfish, used for iLOM tasks, like rebooting hosts
+# Nebulon SPUs
+spus:
+  hosts:
+    medusa-b0421.tme.nebulon.com:
+    medusa-b0428.tme.nebulon.com:
+    medusa-a912.tme.nebulon.com:
+    medusa-a915.tme.nebulon.com:
+  vars:
+    ansible_python_interpreter: auto_silent
+
 redfish:
   hosts:
     server-09-lom.tme.nebulon.com:
@@ -134,3 +114,4 @@ myhosts:
     # Shorter name for inventory_hostname
     # Refers to the logical inventory hostname (example: redfish1)
     host: "{{ inventory_hostname }}"
+```
