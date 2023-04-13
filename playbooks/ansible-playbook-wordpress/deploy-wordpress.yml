@@ -13,6 +13,7 @@
   hosts: k8s_master
 
   tasks:
+  # These tasks can be skipped if the kubeconfig file is provided in another manner
     - name: Copy kubeconfig to local machine
       ansible.builtin.fetch:
         src: /etc/kubernetes/admin.conf
@@ -35,4 +36,17 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: jedimt.wordpress }
+    - { role: jedimt.wordpress,
+
+        # State of deployment (present|absent)
+        state: present,
+
+        # Wordpress image
+        wordpress_image: wordpress:6.1.1-php8.1,
+
+        # MySQL image
+        mysql_image: mysql:8.0.32-oracle,
+
+        # Storage class for persistent volumes
+        storage_class: "nebulon"
+    }
