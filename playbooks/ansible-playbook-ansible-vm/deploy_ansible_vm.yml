@@ -170,7 +170,6 @@
         content: "{{ vault_vault_password }}"
         mode: '0644'
 
-    # To-do: This isn't installing the Nebulon collection for some reason.
     - name: Install required collections and roles from Galaxy
       community.general.ansible_galaxy_install:
         type: both
