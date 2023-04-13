@@ -21,9 +21,10 @@ There are additional playbooks focused on automating functions:
 Setup
 -----
 
-The playbooks in this repo expect to have access to the following files that are not part of this repo. You will need to create these files before you can successfully use the playbooks:
+The playbooks in this repo expect to have access to the following files that you will be required to replace with your own. You will need to re-create these files before you can successfully use the playbooks:
 
 - credentials.yml -> Ansible vault protected passwords and SSH keys
+- serials.yml -> Ansible vault protected hardware serial numbers for SPUs and hosts
 - .vault_pass -> File containing the Ansible Vault password
 
 Requirements
@@ -41,6 +42,20 @@ Playbook Dependancies
 ---------------------
 
 Each playbook has it's own README.md laying out usage and dependancy information.
+
+Ansible Controller
+------------------
+
+The following items must be configured on the Ansible controller:
+
+    Apt packages:
+    - sshpass
+    - unzip
+
+    Python modules:
+    - nebpyclient
+    - pyvmomi
+    - jmespath
 
 Ansible Galaxy
 --------------
