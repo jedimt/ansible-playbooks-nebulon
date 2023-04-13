@@ -14,6 +14,8 @@
   vars_files:
     # Ansible vault with all required passwords
     - "../../credentials.yml"
+    # Ansible vault with all required serial numbers
+    - "../../serials.yml"
 
   roles:
     - { role: jedimt.nebulon_create_npod, npod_name: "nPod_Lenovo" }
