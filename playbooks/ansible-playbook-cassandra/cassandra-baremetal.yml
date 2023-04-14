@@ -1,0 +1,253 @@
+---
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-cassandra/cassandra-baremetal.yml
+
+# To Do
+# Need to create role for installing and configuring metrics exporters for prometheus
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_create_npod,
+        npod_name: "CassandraDB_Lenovo",
+        npod_template: "NoSql",
+        npod_group: NoSqlDb }
+
+# Wait for hosts to boot up
+- name: Wait for hosts to reboot
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to come up - Minutes to wait {{ wait_hosts }}
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: servers
+  gather_facts: false
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.authorized_keys
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_ssh_sync
+
+  roles:
+    - jedimt.ssh
+
+# ===========================================================================
+# Disable APT automatic updates/upgrades
+# ===========================================================================
+- name: Disable APT updates and upgrades
+  hosts: servers
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.apt
+
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  tags: play_network_setup
+
+  roles:
+    - jedimt.network_setup
+
+# ===========================================================================
+# Install Java
+# ===========================================================================
+- name: Install Java
+  hosts: cassandra
+  tags: play_java
+
+  roles:
+    - { role: geerlingguy.java,
+        java_packages: openjdk-11-jdk,
+        when: "ansible_os_family == 'Debian'"
+    }
+
+# ===========================================================================
+# Mount database volume
+# ===========================================================================
+- name: Mount database volume
+  hosts: cassandra
+  tags: play_mount_volume
+
+  roles:
+    - { role: ansible-role-linux_add_scsi_dev,
+        create_fs: true,
+        fstype: xfs,
+        mount_dir: "/data/db"
+    }
+
+# ===========================================================================
+# Install Cassandra
+# ===========================================================================
+- name: Install Cassandra
+  hosts: cassandra
+  serial: 1 # runs against one host at a time - needed to get nodes to join correctly
+  tags: play_cassandra
+
+  vars:
+    mount_dir: "/data/db"
+
+  roles:
+    - { role: locp.cassandra,
+        cassandra_group: cassandra,
+        cassandra_user: cassandra,
+        cassandra_configuration:
+          {
+            authenticator: PasswordAuthenticator,
+            cluster_name: MyCassandraCluster,
+            commitlog_directory: "{{ mount_dir }}/cassandra/commitlog",
+            commitlog_sync: periodic,
+            commitlog_sync_period_in_ms: 10000,
+            data_file_directories:
+              [
+                "{{ mount_dir }}/cassandra/data"
+              ],
+            endpoint_snitch: GossipingPropertyFileSnitch,
+            hints_directory: "{{ mount_dir }}/cassandra/hints",
+            listen_address: "{{ ansible_default_ipv4.address }}",
+            # For a sensible value to set num_tokens to, please see
+            # https://cassandra.apache.org/doc/latest/getting_started/production.html#tokens
+            num_tokens: 4,
+            partitioner: org.apache.cassandra.dht.Murmur3Partitioner,
+            saved_caches_directory: "{{ mount_dir }}/cassandra/saved_caches",
+            "seed_provider": [
+              {
+                "class_name": "org.apache.cassandra.locator.SimpleSeedProvider",
+                "parameters": [
+                  {
+                    "seeds": "{{ hostvars[groups['cassandra'][0]]['ansible_default_ipv4'].address }}"
+                  }
+                ]
+              }
+            ],
+            start_native_transport: true
+          },
+          # Comment out cassandra_configure_apache_repo to get latest Cassandra build.
+          # Otherwise, set to true and specify a version in cassandra_repo_apache_release
+        cassandra_configure_apache_repo: true,
+
+        # Value vaules are 40x and 311x
+        cassandra_repo_apache_release: 40x,
+
+        # Create an alternative directories structure for the Cassandra data.
+        # In this example, the will be a directory called /data owned by root
+        # with rwxr-xr-x permissions.  It will have a series of sub-directories
+        # all of which will be defaulted to being owned by the cassandra user
+        # with rwx------ permissions.
+        cassandra_directories:
+          {
+            "root":
+              {
+                "group": "root",
+                "mode": "0755",
+                "owner": "root",
+                "paths": ["{{ mount_dir }}"]
+              },
+            "data":
+              {
+                "paths":
+                  [
+                    "{{ mount_dir }}/cassandra",
+                    "{{ mount_dir }}/cassandra/commitlog",
+                    "{{ mount_dir }}/cassandra/data",
+                    "{{ mount_dir }}/cassandra/hints",
+                    "{{ mount_dir }}/cassandra/saved_caches"
+                  ]
+              }
+          },
+        cassandra_regex_replacements:
+          [
+            {
+              path: cassandra-env.sh,
+              line: 'MAX_HEAP_SIZE="{{ cassandra_max_heapsize_mb }}M"',
+              regexp: '^#MAX_HEAP_SIZE="4G"'
+            },
+            {
+              path: cassandra-env.sh,
+              line: 'HEAP_NEWSIZE="{{ cassandra_heap_new_size_mb }}M"',
+              regexp: '^#HEAP_NEWSIZE="800M"'
+            },
+            {
+              path: cassandra-rackdc.properties,
+              line: 'dc=DC1',
+              regexp: '^dc='
+            },
+            {
+              path: cassandra-rackdc.properties,
+              line: 'rack=RACK1',
+              regexp: '^rack='
+            }
+          ]
+    }
+
+# ===========================================================================
+# Configure Cassandra database for YCSB
+# ===========================================================================
+- name: Cassandra database setup
+  hosts: cassandra_seed
+  tags: play_cassandra_dbsetup
+
+  tasks:
+    - name: Create the YCSB keyspace in Cassandra
+      ansible.builtin.shell: # noqa 301
+        cmd: |
+          cqlsh {{ ansible_default_ipv4.address }} -u cassandra -p cassandra \
+          -e "create keyspace ycsb WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 1 };"
+      register: task_result
+      until: task_result.rc == 0
+      retries: 10
+      delay: 5
+      tags: cqlsh
+
+    - name: Create the YCSB user table in Cassandra
+      ansible.builtin.shell:  # noqa 301
+        cmd: |
+          cqlsh {{ ansible_default_ipv4.address }} -u cassandra -p cassandra \
+          -e "USE ycsb; create table usertable \
+            (y_id varchar primary key,\
+            field0 varchar,\
+            field1 varchar,\
+            field2 varchar,\
+            field3 varchar,\
+            field4 varchar,\
+            field5 varchar,\
+            field6 varchar,\
+            field7 varchar,\
+            field8 varchar,\
+            field9 varchar);"

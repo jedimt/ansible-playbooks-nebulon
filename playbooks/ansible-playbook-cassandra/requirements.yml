@@ -1,0 +1,12 @@
+---
+
+roles:
+  - name: jedimt.nebulon_create_npod
+  - name: jedimt.authorized_keys
+  - name: jedimt.ssh
+  - name: jedimt.apt
+  - name: jedimt.vim
+  - name: jedimt.network_setup
+  - name: jedimt.ycsb
+  - name: geerlingguy.java
+  - name: locp.cassandra
