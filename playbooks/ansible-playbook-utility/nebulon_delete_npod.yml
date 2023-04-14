@@ -1,0 +1,16 @@
+# ===========================================================================
+# Delete Nebulon nPod
+# ===========================================================================
+- name: Delete Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_delete_npod,
+        npod_name: "test"
+    }
