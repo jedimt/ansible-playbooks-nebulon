@@ -1,0 +1,130 @@
+---
+# ===========================================================================
+# vSphere homewrecker playbook
+# ===========================================================================
+
+# Example invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-nebulon-timejump/homewrecker.yml
+
+- name: Delete hosted Kubernetes cluster
+  hosts: localhost
+  connection: local
+  tags: play_delete_k8s
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    vcenter_hostname: 'devvcsa.tme.nebulon.com'
+    vcenter_username: 'administrator@vsphere.local'
+    vcenter_password: "{{ vault_vcenter_password }}"
+    vcenter_datacenter: 'SC0'
+    vcenter_vm_folder: 'Kubernetes'
+    npod_name: 'lenovo_VMware'
+    neb_snapshot_expiration_seconds: 28800
+    neb_snapshot_retention_seconds: 600
+
+
+  tasks:
+
+    # Query Nebulon ON for nPod
+    - name: Get Nebulon nPod by name
+      nebulon.nebulon_on.neb_npod_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod_name }}"
+      register: npod
+      tags: npod_snapshot
+
+    # Set the npod_uuid variable
+    - name: Set nPod UUID variable
+      ansible.builtin.set_fact:
+        npod_uuid: "{{ npod.npods[0].uuid }}"
+      tags: npod_snapshot
+
+    # The module expects volume UUIDs so we go ahead and get a list of volumes
+    - name: Get nPod volumes
+      nebulon.nebulon_on.neb_volume_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        npod_uuid: "{{ npod_uuid }}"
+        base_only: true
+      register: npod_volumes
+      tags: npod_snapshot
+
+    # Extract the volume UUIDs
+    - name: Extract all nPod volume UUIDs
+      ansible.builtin.set_fact:
+        volume_uuid: "{{ npod_volumes.volumes | map(attribute='uuid') | list }}"
+      tags: npod_snapshot
+
+    # Create a set of snaps so we can role back to the state immediately prior to running
+    # this playbook.
+    # Create a snapshot using the volume_uuid variable as a base
+    - name: Create new rollback snapshots
+      nebulon.nebulon_on.neb_snapshot:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        volume_uuids: "{{ item }}"
+        name_patterns:
+          - 'brb_rollback_%v_%y-%m-%d_%H:%M'
+        expiration_seconds: "{{ neb_snapshot_expiration_seconds }}"
+        retention_seconds: "{{ neb_snapshot_retention_seconds }}"
+        state: present
+      with_items: "{{ volume_uuid }}"
+      tags: npod_snapshot
+
+    # Gather a list of VMs to delete. This will delete all VMs in the Kubernetes folder
+    - name: Gather inventory of Kubernetes VMs
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_type: vm
+        folder: "/{{ vcenter_datacenter }}/vm/{{ vcenter_vm_folder }}"
+        validate_certs: false
+      register: vm_info
+
+    # Pull out VM UUIDs to pass to vmware_guest to delete
+    - name: Retrieve VM UUIDs to delete
+      ansible.builtin.set_fact:
+        vm_uuids: "{{ vm_info.virtual_machines |
+                      map(attribute='uuid') | list }}"
+
+    # Remove all VMs present in the vm_uuids variable
+    # Faster to force delete rather than power off and delete gracefully
+    - name: Remove selected VMs
+      community.vmware.vmware_guest:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        state: absent
+        uuid: "{{ item }}"
+        force: true
+        validate_certs: false
+      with_items: "{{ vm_uuids }}"
+
+# This play invokes a PSOD on all ESXi hsots
+- name: Destroy VMware ESXi hosts
+  hosts: vmware
+  gather_facts: false
+
+  tasks:
+
+    # This selects the first "partition 1" which will be the boot volume
+    - name: Delete the boot partition on all hosts
+      ansible.builtin.shell:
+        partedUtil delete "/vmfs/devices/disks/$(ls /vmfs/devices/disks | grep -m1 naa)" 1
+      changed_when: true
+      tags: disks
+
+    # Panic the hosts.
+    - name: Panic ESXi hosts
+      ansible.builtin.command:
+        vsish -e set /reliability/crashMe/Panic 1
+      changed_when: true
+      # Set async and poll values to keep playbook from hanging looking for a response from a dead host
+      async: 1
+      poll: 0
