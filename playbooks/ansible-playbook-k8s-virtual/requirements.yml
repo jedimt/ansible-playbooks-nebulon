@@ -1,0 +1,19 @@
+---
+
+roles:
+  - name: jedimt.deploy_vms
+  - name: jedimt.customize_vms
+  - name: jedimt.authorized_keys
+  - name: jedimt.ssh
+  - name: jedimt.apt
+  - name: jedimt.haproxy
+  - name: jedimt.kubernetes_prep
+  - name: jedimt.kubernetes_create_cluster
+  - name: jedimt.kubernetes_cni
+  - name: jedimt.kubernetes_join_nodes
+  - name: jedimt.kubernetes_metallb
+  - name: jedimt.vmware_csi
+  - name: jedimt.helm
+  - name: jedimt.kubernetes_nginx_ingress
+  - name: jedimt.golang
+  - name: jedimt.kubernetes_kube_prometheus

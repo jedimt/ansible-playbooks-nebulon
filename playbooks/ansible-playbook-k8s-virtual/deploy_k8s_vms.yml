@@ -3,7 +3,7 @@
 # including the VMware CSI driver and Kube-Prometheus.
 
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_phase2.yml
+# ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-k8s-virtual/deploy_k8s_vms.yml
 
 # ===========================================================================
 # Deploy VMs
@@ -17,7 +17,7 @@
     group/vmware:
       hostname: '{{ vcenter_hostname }}'
       username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
+      password: '{{ vault_vcenter_password }}'
       validate_certs: false
   tags: play_deploy_vms
 

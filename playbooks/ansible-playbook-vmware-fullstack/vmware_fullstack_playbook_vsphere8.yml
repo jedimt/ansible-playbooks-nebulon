@@ -122,13 +122,13 @@
     group/vmware:
       hostname: '{{ vcenter_hostname }}'
       username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
+      password: '{{ vault_vcenter_password }}'
       validate_certs: false
     vmware_host:
       datacenter_name: '{{ vcenter_datacenter }}'
       cluster_name: '{{ vcenter_cluster }}'
       esxi_username: '{{ esxi_username }}'
-      esxi_password: '{{ esxi_password }}'
+      esxi_password: '{{ vault_esxi_password }}'
     vmware_host_service_manager:
       cluster_name: '{{ vcenter_cluster }}'
     vmware_host_config_manager:
@@ -157,7 +157,7 @@
     group/vmware:
       hostname: '{{ vcenter_hostname }}'
       username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
+      password: '{{ vault_vcenter_password }}'
       validate_certs: false
   tags: play_clone_template
 
