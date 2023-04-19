@@ -84,7 +84,15 @@
 
   roles:
     - { role: jedimt.vmware_vcsa_embedded_install,
-        vsphere_version: "8" }
+        # vSphere major version (7|8)
+        vsphere_version: "8",
+        # We have to use HTTPS for ovftool to be happy
+        # HTTPS Path to the VCSA OVF file (and VMDKs)
+        # vSphere 7.0 U3g
+        vcsa_ovf_7: "https://homes.sc0.nebulon.com/aaron/files/vmware/ovf7/vcsa703.ovf",
+        # vSphere 8.0 U1
+        vcsa_ovf_8: "https://homes.sc0.nebulon.com/aaron/files/vmware/ovf_8.0.1.00000/vcsa_8.0.1.00000.ovf"
+    }
 
 - name: Wait for VCSA installation to complete
   hosts: vcsa
