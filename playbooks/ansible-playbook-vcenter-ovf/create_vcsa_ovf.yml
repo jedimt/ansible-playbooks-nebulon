@@ -14,7 +14,7 @@
   roles:
     - { role: jedimt.vcenter_ovf,
         # ISO file name
-        vcenter_iso_file: "VMware-VCSA-all-8.0.0-21216066.iso",
+        vcenter_iso_file: "VMware-VCSA-all-8.0.1-21560480.iso",
 
         # Location of the vCenter ISO file in the local filesystem
         vcenter_iso_folder: '/home/aaron/files/vmware',
