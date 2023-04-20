@@ -94,3 +94,42 @@
 
   roles:
     - jedimt.mongodb
+
+# ===========================================================================
+# MongoDB Prometheus exporter
+# ===========================================================================
+
+- name: Install and configure mongodb prometheus exporters
+  hosts: mongo
+  tags: play_mongo_exporter
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.mongodb_exporter,
+        # Download location for the prometheus mongodb_exporter tarball file
+        mongodb_exporter_tarball: 'https://github.com/percona/mongodb_exporter/releases/download/v2.37.0/mongodb_exporter-2.37.0.linux-amd64.tar.gz',
+
+        # MongoDB URI. By default, listen on IP address used to connect to the host.
+        mongodb_exporter_mongodb_uri: 'mongodb://"{{ ansible_default_ipv4.address }}":27017'
+    }
+
+# ===========================================================================
+# Prometheus node exporter
+# ===========================================================================
+
+- name: Install and configure prometheus node exporter
+  hosts: mongo
+  tags: play_node_exporter
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.linux_node_exporter,
+        # Download location for the prometheus node_exporter tarball file
+        linux_node_exporter_tarball: 'https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz'
+    }
