@@ -1,0 +1,132 @@
+---
+# ToDo:
+# Fix the snapshot schedule template name after changes were made to the schedule names
+
+demopod_templates:
+  - name: "CockroachDB 21.2.4"
+    app: "CockroachDB"
+    boot_image_url: "http://homes.sc0.nebulon.com/tobias/images/cockroach/cockroachdb.21.2.4.img.gz"
+    boot_volume: true
+    boot_volume_size_bytes: 64424509440
+    mirrored_volume: false
+    note: "Ubuntu 20.04.4 base for CockroachDB. One local data volume per server."
+    os: "Ubuntu Linux (64-bit)"
+    saving_factor: 1
+    snapshot_schedule_template_uuids: "{{daily_snapshot_template_uuid}}"
+    volume_count: 1
+    volume_size_bytes: 3298534883400
+    state: present
+
+  - name: "ESXi 7.0 U3"
+    app: "vSphere"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/esx70/esxi703g_brb_demo_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 34359738368
+    mirrored_volume: true
+    note: "Base template for vSphere; boot from Nebulon with shared data volumes."
+    os: "VMware ESXi 7.0"
+    saving_factor: 2.0
+    snapshot_schedule_template_uuids: "{{hourly_snapshot_template_uuid}}"
+    volume_count: -1
+    # 4TiB volumes
+    volume_size_bytes: 4398046511104
+    state: present
+
+  - name: "ESXi 8.0"
+    app: "vSphere"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/esx80/esxi80u1_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 34359738368
+    mirrored_volume: true
+    note: "Base template for vSphere; boot from Nebulon with shared data volumes."
+    os: "VMware ESXi 8.0"
+    saving_factor: 2.0
+    snapshot_schedule_template_uuids: "{{hourly_snapshot_template_uuid}}"
+    volume_count: -1
+    # 4TiB volumes
+    volume_size_bytes: 4398046511104
+    state: present
+
+  - name: "K8s Local"
+    app: "Kubernetes"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/ubuntu22044/ubuntu_22.04.4_cloudinit_v2_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 64424509440
+    mirrored_volume: false
+    note: "Ubuntu 22.04 base for Kubernetes. No shared data volumes. CSI driver to provision persistent container storage."
+    os: "Ubuntu Linux (64-bit)"
+    saving_factor: 1
+    snapshot_schedule_template_uuids: "{{daily_snapshot_template_uuid}}"
+    volume_count: -1
+    volume_size_bytes: 2199023255552
+    state: present
+
+  - name: "MongoDB"
+    app: "MongoDB Database"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/ubuntu20044/ubuntu_20.04.5_cloudinit_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 64424509440
+    mirrored_volume: false
+    note: "Ubuntu 20.04.4 base for NoSQL type databases (MongoDB, Cassandra). One local data volume per server."
+    os: "Ubuntu Linux (64-bit)"
+    saving_factor: 1
+    snapshot_schedule_template_uuids: "{{hourly_snapshot_template_uuid}}"
+    volume_count: 1
+    volume_size_bytes: 3298534883400
+    state: present
+
+  - name: "NoSql"
+    app: "NoSQL Databases"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/ubuntu22044/ubuntu_22.04.4_cloudinit_v2_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 64424509440
+    mirrored_volume: false
+    note: "Ubuntu 22.04 base for NoSQL type databases such as Cassandra. One local data volume per server."
+    os: "Ubuntu Linux (64-bit)"
+    saving_factor: 1
+    snapshot_schedule_template_uuids: "{{hourly_snapshot_template_uuid}}"
+    volume_count: 1
+    volume_size_bytes: 3298534883400
+    state: present
+
+  - name: "Ubuntu 20.04.5 Base"
+    app: "Linux applications"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/ubuntu20044/ubuntu_20.04.5_cloudinit_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 64424509440
+    mirrored_volume: false
+    note: "Ubuntu 20.04.5 base for generic applications. No shared data volumes."
+    os: "Ubuntu Linux (64-bit)"
+    saving_factor: 1
+    snapshot_schedule_template_uuids: "{{daily_snapshot_template_uuid}}"
+    volume_count: -1
+    volume_size_bytes: 3298534883400
+    state: present
+
+  - name: "Ubuntu 22.04.4 Base"
+    app: "Linux applications"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/ubuntu22044/ubuntu_22.04.4_cloudinit_v2_10g.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 64424509440
+    mirrored_volume: false
+    note: "Ubuntu 22.04 base for generic applications. No shared data volumes."
+    os: "Ubuntu Linux (64-bit)"
+    saving_factor: 1
+    snapshot_schedule_template_uuids: "{{daily_snapshot_template_uuid}}"
+    volume_count: -1
+    volume_size_bytes: 3298534883400
+    state: present
+
+  - name: "Windows Server 2019 Cluster"
+    app: "Failover Cluster"
+    boot_image_url: "http://homes.sc0.nebulon.com/aaron/bootimg/srv2019_40gb.img.xz"
+    boot_volume: true
+    boot_volume_size_bytes: 107374182400
+    mirrored_volume: true
+    note: "Base template for Windows Server shared volumes; boot from Nebulon. No data volumes."
+    os: "Microsoft Windows Server 2019 (64 bit)"
+    saving_factor: 2
+    snapshot_schedule_template_uuids: "{{daily_snapshot_template_uuid}}"
+    volume_count: -1
+    volume_size_bytes: 2199023255552
+    state: present

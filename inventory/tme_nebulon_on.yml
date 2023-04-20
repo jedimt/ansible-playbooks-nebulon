@@ -1,0 +1,28 @@
+# This inventory file is to be used with the tme_reset playbook to provide
+# SPU serial numbers for the spu update steps.
+servers:
+  hosts:
+    server-05.tme.nebulon.com:
+      spu_serial: 0123F7A8D51D48C819
+      spu_address: 10.100.29.114
+    server-06.tme.nebulon.com:
+      spu_serial: 01238F123073C87119
+      spu_address: 10.100.29.115
+    server-07.tme.nebulon.com:
+      spu_serial: 0123F5132F06C5C5EE
+      spu_address: 10.100.29.116
+    server-08.tme.nebulon.com:
+      spu_serial: 0123237A9F163BAD19
+      spu_address: 10.100.29.113
+    server-09.tme.nebulon.com:
+      spu_serial: 012386435A39449519
+      spu_address: 10.100.29.117
+    server-10.tme.nebulon.com:
+      spu_serial: 01231C5BA68435FC19
+      spu_address: 10.100.29.118
+    server-11.tme.nebulon.com:
+      spu_serial: 01234C1DDA95332EEE
+      spu_address: 10.100.29.119
+    server-12.tme.nebulon.com:
+      spu_serial: 01236AE13059FD35EE
+      spu_address: 10.100.29.120

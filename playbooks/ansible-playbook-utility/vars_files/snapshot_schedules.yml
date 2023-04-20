@@ -1,0 +1,39 @@
+---
+# ToDo
+# Test the daily snapshot schedule to make sure it creates as desired
+demopod_snapshots:
+
+  # Hourly template, for high change rate or BRB situations
+  - name: "Hourly Snapshot Schedule"
+    snapshot_name_pattern: "%v_%y-%m-%d_%H:%M"
+    schedule_minutes: 0
+    schedule_hours: [8,9,10,11,12,13,14,15,16,17,18,19,20]
+    schedule_days_of_week: []
+    schedule_days_of_month: []
+    schedule_months: []
+    expiration_weeks: 0
+    expiration_days: 1
+    expiration_hours: 0
+    retention_weeks: 0
+    retention_days: 0
+    retention_hours: 0
+    include_boot_volume: True
+    state: present
+
+  # Daily template, for typical workloads
+  # NEEDS TESTING
+  - name: "Daily Snapshot Schedule"
+    snapshot_name_pattern: "%v_%y-%m-%d_%H:%M"
+    schedule_minutes: 0
+    schedule_hours: [3]
+    schedule_days_of_week: []
+    schedule_days_of_month: []
+    schedule_months: []
+    expiration_weeks: 1
+    expiration_days: 0
+    expiration_hours: 0
+    retention_weeks: 0
+    retention_days: 0
+    retention_hours: 0
+    include_boot_volume: True
+    state: present

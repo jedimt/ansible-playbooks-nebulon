@@ -1,0 +1,265 @@
+---
+
+# Example Invocation (with custom variables):
+# ansible-playbook -i inventory/tme_nebulon_on.yml playbooks/ansible-playbook-utility/tme_reset.yml
+
+# This playbook will execute the following tasks to return the org to a known good state:
+# Delete any existing nPods
+# Reset templates (app and snapshot)
+# Update the cards to specified release
+
+- name: Reset TME environment
+  hosts: localhost
+  connection: local
+
+  vars_files:
+    # The templates.yml file contains all nPod app templates to build
+    # The snapshot_schedules.yml file contains all snapshot schedules
+    # The credentials.yml file holds Nebulon ON credentials
+    - ./vars_files/templates.yml
+    - ./vars_files/snapshot_schedules.yml
+    - ../../credentials.yml
+
+  vars:
+    # Update package to install on SPUs
+    # For internal builds the package name and version are usually identical
+    # and consist of the base name + build number. I.e., "1.3.1-7028"
+    # For GA builds package name includes the build date. I.e. "1.3.1 (2212)"
+    # neb_update_package_name used for the actual update task
+    neb_update_package_name: "1.3.16-8686"
+    # The actual nebOS version for the update package (in this case 1.3.1 (2212))
+    # neb_version is used for searching for SPUs at a certain build
+    neb_version: "base,1.3.16-8686"
+
+  tasks:
+  # Validate we are resetting the correct environment
+    - name: Remove existing nPods from TME environment
+      ansible.builtin.pause:
+        prompt: This will completely reset the TME environment!!! Hit 'y' to reset.
+      register: confirm_reset
+
+    # Pressing 'n' will cancel the environment wipe
+    # CTRL-C followed by 'a' will also do the trick
+    - name: Cancel reset of TME environment
+      ansible.builtin.debug:
+        msg: You have cancelled a full reset of the TME environment
+      when: confirm_reset.user_input == "n"
+
+    - name: End play if user cancels
+      ansible.builtin.meta: end_play
+      when: confirm_reset.user_input == "n"
+
+  # Delete any existing nPods found in the environment
+    # Query Nebulon ON for nPod details and store that in a variable named `npod`
+    - name: Get nPod details
+      nebulon.nebulon_on.neb_npod_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+      register: npod
+      tags:
+        - npod
+
+    - name: Retrieve names of nPods to delete
+      ansible.builtin.set_fact:
+        npod_names: "{{ npod.npods | map(attribute='name') | flatten }}"
+      tags:
+        - npod
+
+    # Delete the nPod, only fires is npod.npods is populated
+    # TO_DO - This needs to be updated to handle more than on nPod
+    - name: Delete nPod
+      nebulon.nebulon_on.neb_npod:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ npod_names }}"
+      when: npod.npods | default(None)
+      tags:
+        - npod_delete
+
+  # Fix templates
+    # Get a list of all the templates in the org
+    - name: Get list of all templates
+      nebulon.nebulon_on.neb_npod_template_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+      register: npod_templates
+      tags: template
+
+    # This gets a unique list of templates and removes the protected system templates
+    - name: Store template names from Nebulon ON
+      ansible.builtin.set_fact:
+        template_names: "{{ npod_templates.npod_templates |
+                          map(attribute='name') |
+                          reject('match', 'Empty Pod Template') |
+                          list | unique }}"
+      tags: template
+
+    # Remove all non-protected templates
+    - name: Remove all templates
+      nebulon.nebulon_on.neb_npod_template:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ template_names }}"
+      when: template_names | default(None)
+      tags: template
+
+    # Get a list of all the snapshot templates
+    - name: Get list of all snapshot templates
+      nebulon.nebulon_on.neb_snapshot_template_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+      register: npod_snapshot_templates
+      tags:
+        - snap_template
+        - list_template
+        - template
+
+    # This gets a unique list of snapshot templates and removes the protected system templates
+    - name: Store snapshot template names from Nebulon ON
+      ansible.builtin.set_fact:
+        snapshot_template_names: "{{ npod_snapshot_templates.snapshot_schedule_templates |
+                                  map(attribute='name') | list | unique }}"
+      tags:
+        - snap_template
+        - template
+
+    # Remove all non-protected snapshot templates
+    - name: Remove all templates
+      nebulon.nebulon_on.neb_snapshot_template:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ snapshot_template_names }}"
+      # Only run when snapshot_template_names is not null
+      when: snapshot_template_names | default(None)
+      tags:
+        - snap_template
+        - template
+
+    # Recreate default snapshot templates
+    - name: Recreate default snapshot templates
+      nebulon.nebulon_on.neb_snapshot_template:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ item.name }}"
+        snapshot_name_pattern: "{{ item.snapshot_name_pattern }}"
+        schedule_period:
+          minutes: "{{ item.schedule_minutes }}"
+          hours: "{{ item.schedule_hours }}"
+          days_of_week: "{{ item.schedule_days_of_week }}"
+          days_of_month: "{{ item.schedule_days_of_month }}"
+          months: "{{ item.schedule_months }}"
+        expiration_time:
+          weeks: "{{ item.expiration_weeks }}"
+          days: "{{ item.expiration_days }}"
+          hours: "{{ item.expiration_hours }}"
+        retention_time:
+          weeks: "{{ item.retention_weeks }}"
+          days: "{{ item.retention_days }}"
+          hours: "{{ item.retention_hours }}"
+        include_boot_volume: "{{ item.include_boot_volume }}"
+        state: "{{ item.state }}"
+      loop: "{{ demopod_snapshots }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags:
+        - snap_template
+        - template
+
+    # Get snapshot template UUIDs
+    - name: Get list of all snapshot templates
+      nebulon.nebulon_on.neb_snapshot_template_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+      register: npod_snapshot_templates
+      tags:
+        - template
+
+    # Extract the snapshot template uuids
+    - name: Store snapshot template names from Nebulon ON
+      ansible.builtin.set_fact:
+        daily_snapshot_template_uuid: "{{ npod_snapshot_templates.snapshot_schedule_templates |
+                                      selectattr('name', 'contains', 'Daily') |
+                                      map(attribute='uuid') | list }}"
+        hourly_snapshot_template_uuid: "{{ npod_snapshot_templates.snapshot_schedule_templates |
+                                        selectattr('name', 'contains', 'Hourly') |
+                                        map(attribute='uuid') | list }}"
+      tags: template
+
+    # Recreate the "standard" templates
+    - name: Create default templates
+      nebulon.nebulon_on.neb_npod_template:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ item.name }}"
+        app: "{{ item.app }}"
+        boot_image_url: "{{ item.boot_image_url }}"
+        boot_volume: "{{ item.boot_volume }}"
+        boot_volume_size_bytes: "{{ item.boot_volume_size_bytes }}"
+        mirrored_volume: "{{ item.mirrored_volume }}"
+        note: "{{ item.note }}"
+        os: "{{ item.os }}"
+        saving_factor: "{{ item.saving_factor }}"
+        snapshot_schedule_template_uuids: "{{ item.snapshot_schedule_template_uuids }}"
+        volume_count: "{{ item.volume_count }}"
+        volume_size_bytes: "{{ item.volume_size_bytes }}"
+        state: "{{ item.state }}"
+      loop: "{{ demopod_templates }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags:
+        - template
+        - create_template
+
+  # Update SPUs to specified version and reset
+    # Extract SPU serials from inventory
+    - name: Prepare SPU specific info from inventory
+      ansible.builtin.set_fact:
+        spu_serials: "{{ groups.servers | map('extract', hostvars, 'spu_serial') | list }}"
+      tags: nebos
+
+    # Determine if the SPUs are in a pod or not
+    - name: Get SPU information
+      nebulon.nebulon_on.neb_spu_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        spu_serials: "{{ spu_serials }}"
+        not_in_npod: true
+      register: npod_spus
+      tags: nebos
+
+    # Select the SPUs that need an update, if any
+    - name: Select SPUs requiring update
+      ansible.builtin.set_fact:
+        spus_to_update: "{{ npod_spus.spus |
+                        rejectattr('version', 'contains', neb_version) |
+                        map(attribute='serial') | list }}"
+      tags: nebos
+
+    # # Select the SPUs that need an update, if any
+    # # Seeing if we can eliminate the neb_version variable here... needs to be tested
+    # - name: Select SPUs requiring update
+    #   ansible.builtin.set_fact:
+    #     spus_to_update: "{{ npod_spus.spus |
+    #                     rejectattr('version', 'contains', 'base,'neb_update_package_name) |
+    #                     map(attribute='serial') | list }}"
+    #   tags: nebos
+
+    # If the SPUs are NOT in a nPod and not at the correct version, update them
+    # specifying the spu serial and package name. All SPUs will be upgraded in parallel.
+    - name: Update one or more SPUs not in a nPod
+      nebulon.nebulon_on.neb_update:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        spu_serial: "{{ item }}"
+        package_name: "{{ neb_update_package_name }}"
+      with_items: "{{ spus_to_update }}"
+      register: spu_update_result
+      when: (npod_spus.spus[0].serial is defined) and (spus_to_update | default(None))
+      tags: nebos
