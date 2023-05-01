@@ -1,0 +1,45 @@
+---
+# Example invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-utility/update_ssh_known_hosts.yml
+
+- name: Store known hosts of 'all' the hosts in the inventory file
+  hosts: localhost
+  connection: local
+
+  vars:
+    ssh_known_hosts_command: "ssh-keyscan -T 10"
+    ssh_known_hosts_file: "{{ lookup('env','HOME') + '/.ssh/known_hosts' }}"
+    ssh_known_hosts: "{{ groups['servers'] }}"
+
+  tasks:
+
+    # tasks file for nebulon.ssh_update_known_hosts
+    - name: For each host, scan for its ssh public key
+      ansible.builtin.shell: "ssh-keyscan {{ item }},`dig +short {{ item }}`"
+      with_items: "{{ ssh_known_hosts }}"
+      register: ssh_known_host_results
+      changed_when: false
+
+    - name: Create .ssh if it does not exist
+      ansible.builtin.file:
+        path: ~/.ssh
+        state: directory
+        mode: '0700'
+
+    - name: Create known_hosts file if not existing
+      ansible.builtin.file:
+        path: "{{ ssh_known_hosts_file }}"
+        state: touch
+        mode: '644'
+        modification_time: preserve
+        access_time: preserve
+      register: file_results
+
+    - name: Add/update the public key in the '{{ ssh_known_hosts_file }}'
+      ansible.builtin.known_hosts:
+        name: "{{ item.item }}"
+        key: "{{ item.stdout }}"
+        path: "{{ ssh_known_hosts_file }}"
+      no_log: true
+      with_items: "{{ ssh_known_host_results.results }}"
+      register: key_results
