@@ -223,10 +223,10 @@
 
     - name: Register AZ CLI extension
       ansible.builtin.command:
-        az extension add --name {{ item }}
+        az extension add --name "{{ item }}"
       with_items:
-        - connectedk8s
         - k8s-configuration
+        - connectedk8s
       tags: az_extension
       register: az_extension_result
       changed_when: "'already installed' not in az_extension_result.stderr"

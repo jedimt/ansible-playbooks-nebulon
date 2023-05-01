@@ -28,24 +28,30 @@ if [ "$HOSTNAME" = server-09 ]; then
     wget -q https://bootstrap.pypa.io/get-pip.py -P ~/
 
     printf '%s\n' "Installing pip"
-    python ~/get-pip.py
-
-    printf '%s\n' "Installing NebPyClient"
-    python -m pip install nebpyclient==2.0.8
+    python3 ~/get-pip.py
 
     printf '%s\n' "Installing Ansible"
-    python -m pip install ansible
+    python3 -m pip install ansible
 
     #Import the public SSH key for bitbucket.org
     ssh-keyscan github.com >> ~/.ssh/known_hosts
 
     #Clone the auto_k8s repository
     printf '%s\n' "Cloning the ansible-playbooks-nebulon repository"
-    git clone git@github.com:jedimt/ansible-playbooks-nebulon.git ~/ansible-playbooks-nebulon
+    git clone https://github.com/jedimt/ansible-playbooks-nebulon.git ~/ansible-playbooks-nebulon
 
     #Install the Nebulon Ansible module
     printf '%s\n' "Installing Ansible module"
     ansible-galaxy collection install nebulon.nebulon_on
+
+    printf '%s\n' "Installing required Ansible roles"
+    ansible-galaxy role install -r ~/ansible-playbooks-nebulon/requirements.yml
+
+    printf '%s\n' "Installing Python modules"
+    python3 -m pip install -r ~/ansible-playbooks-nebulon/requirements.txt
+
+    printf '%s\n' "Installing Apt packages"
+    apt update && apt install -y sshpass unzip
 
     #Run the Ansible playbook
     printf '%s\n' "${BLUE}Exceuting Ansible playbook!${NORMAL}"
