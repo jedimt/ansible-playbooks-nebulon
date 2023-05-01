@@ -1,0 +1,295 @@
+---
+# This playbook onboards a K8s cluster to Azure Arc.
+# Reference: https://learn.microsoft.com/en-us/azure/azure-arc/servers/onboard-ansible-playbooks
+
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-azure-arc/onboard_k8s.yml
+
+# Prerequisites:
+# An Azure service principal account to use for onboarding systems
+# A location is Azure is already available
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: servers
+  gather_facts: false
+  become: false
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.authorized_keys
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tags: play_ssh_sync
+
+  roles:
+    - jedimt.ssh
+
+# ===========================================================================
+# Disable APT automatic updates/upgrades
+# ===========================================================================
+- name: Disable APT updates and upgrades
+  hosts: servers
+  gather_facts: false
+
+  roles:
+    - jedimt.apt
+
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  tags: play_network_setup
+
+  roles:
+    - jedimt.network_setup
+
+# ===========================================================================
+# Kubernetes pre-install tasks
+# ===========================================================================
+- name: Kubernetes pre-install tasks
+  hosts: servers
+  tags: k8s
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.kubernetes_prep
+
+# ===========================================================================
+# Create Kubernetes cluster
+# ===========================================================================
+- name: Create Kubernetes cluster
+  hosts: k8s_master
+  tags: play_create_k8s_cluster
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.kubernetes_create_cluster
+
+# ===========================================================================
+# Install K8s CNI
+# ===========================================================================
+- name: Install K8s networking plugin
+  hosts: k8s_master
+  tags: play_k8s_network
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.kubernetes_cni
+
+# ===========================================================================
+# Join nodes to Kubernetes cluster
+# ===========================================================================
+- name: Join Kubernetes nodes to cluster
+  hosts: k8s_nodes
+  tags: play_k8s_nodes
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.kubernetes_join_nodes
+
+# ===========================================================================
+# Install MetalLB L2 load balancer
+# ===========================================================================
+- name: Install MetalLB load balancer
+  hosts: k8s_master
+  become: true
+  tags: play_metallb
+
+  roles:
+    - jedimt.kubernetes_metallb
+
+# ===========================================================================
+# Onboard Kubernetes cluster to Azure Arc
+# ===========================================================================
+- name: Onboard Kubernetes cluster to Azure Arc
+  hosts: k8s_master
+  tags: play_onboard_k8s
+  gather_facts: true
+
+  vars:
+    azure:
+      service_principal_id: "{{ vault_service_principal_id }}"
+      service_principal_secret: "{{ vault_service_principal_secret }}"
+      tenant_id: "{{ vault_tenant_id }}"
+      subscription_id: "{{ vault_subscription_id }}"
+      location: 'us-east'
+      keyring_url: 'https://packages.microsoft.com/keys/microsoft.asc'
+      keyring_location: '/etc/apt/trusted.gpg.d/microsoft.asc'
+      software_repo: 'https://packages.microsoft.com/repos/azure-cli/'
+      resource_group: 'Arc-k8s-Clusters'
+      arc_k8s_cluster_name: 'nPod_K8s_TME_SC0'
+    apt_packages:
+      - ca-certificates
+      - curl
+      - apt-transport-https
+      - lsb-release
+      - gnupg
+    # k8s_user is K8s account to create for bearer token to be passed to ARM
+    k8s_user: "demo-user"
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+
+    - name: Ensure correct packages installed
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      with_items: "{{ apt_packages }}"
+
+    - name: Add Microsoft GPG key
+      ansible.builtin.get_url:
+        url: "{{ azure.keyring_url }}"
+        dest: "{{ azure.keyring_location }}"
+        mode: '0644'
+      register: apt_result
+      until: apt_result is success
+      tags: microsoft_gpg
+
+    - name: Get LSB release info
+      ansible.builtin.command:
+        /usr/bin/lsb_release -cs
+      register: lsb_release
+      changed_when: false
+      tags: ms_gpg
+
+    - name: Get architecture
+      ansible.builtin.command:
+        dpkg --print-architecture
+      register: sys_arch
+      changed_when: false
+
+    - name: Set system architecture variable
+      ansible.builtin.set_fact:
+        system_architecture: "{{ sys_arch.stdout }}"
+
+    - name: Set fact for lsb_release variable
+      ansible.builtin.set_fact:
+        az_repo: "{{ lsb_release.stdout }}"
+
+    - name: Add Microsoft APT repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ system_architecture }} signed-by={{ azure.keyring_location }}] {{ azure.software_repo }} {{ az_repo }} main"
+        filename: '/etc/apt/sources.list.d/azure-cli'
+      tags: ms_gpg
+
+    - name: Install AZ CLI
+      ansible.builtin.apt:
+        name:
+          - azure-cli
+        update_cache: true
+
+    - name: Log in with service principal account
+      ansible.builtin.command:
+        az login \
+          --service-principal \
+          --username "{{ azure.service_principal_id }}" \
+          --password "{{ azure.service_principal_secret }}" \
+          --tenant "{{ azure.tenant_id }}"
+      register: az_login_result
+      changed_when: false
+      tags: az
+
+    - name: Register AZ CLI extension
+      ansible.builtin.command:
+        az extension add --name {{ item }}
+      with_items:
+        - connectedk8s
+        - k8s-configuration
+      tags: az_extension
+      register: az_extension_result
+      changed_when: "'already installed' not in az_extension_result.stderr"
+
+    - name: Connect Kubernetes cluster to Arc
+      ansible.builtin.command:
+        az connectedk8s connect \
+          --name {{ azure.arc_k8s_cluster_name }} \
+          --resource-group {{ azure.resource_group }}
+      register: az_connect_result
+      tags: az_connect
+      changed_when: "'Connected' not in az_connect_result.stdout"
+
+    #### Create the bearer token for Azure ####
+    - name: Create demo user
+      ansible.builtin.command:
+        kubectl create serviceaccount {{ k8s_user }}
+      register: sa_result
+      tags: svc_account
+      changed_when: "'created' in sa_result.stdout"
+      failed_when: sa_result.rc > 1
+
+    - name: Create cluster role binding
+      ansible.builtin.command:
+        "kubectl create clusterrolebinding {{ k8s_user }}-binding \
+          --clusterrole cluster-admin \
+          --serviceaccount default:{{ k8s_user }}"
+      changed_when: "'created' in crb_result.stdout"
+      failed_when: crb_result.rc > 1
+      tags: crb_result
+      register: crb_result
+
+    - name: Create service account token manifest
+      ansible.builtin.template:
+        src: sa_token.j2
+        dest: "{{ ansible_env.HOME }}/sa_token.yml"
+        mode: '0644'
+      tags: create_sa_token_file
+
+    - name: Apply serive acount token manifest
+      ansible.builtin.command:
+        kubectl apply -f "{{ ansible_env.HOME }}/sa_token.yml"
+      register: sa_apply_result
+      changed_when: "'created' in sa_apply_result"
+      failed_when: sa_apply_result.rc > 1
+      tags: sa_apply_result
+
+    - name: Get token
+      ansible.builtin.shell:
+        kubectl get secret demo-user-secret -o jsonpath='{$.data.token}' | base64 -d | sed 's/$/\n/g' > /tmp/sa_token.txt
+      register: sa_token_output
+      changed_when: false
+      tags: sa_token
+
+    # - name: Copy SA token to Ansible controller
+    #   ansible.builtin.fetch:
+    #     src: /tmp/sa_token.txt
+    #     dest: ./
+    #     flat: true
+    #   tags: sa_token
+
+    # - name: Remove temporary token file from remote host
+    #   ansible.builtin.file:
+    #     path: /tmp/sa_token.txt
+    #     state: absent
+    #   tags: sa_token
