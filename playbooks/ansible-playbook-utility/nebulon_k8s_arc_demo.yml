@@ -1,0 +1,21 @@
+---
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-utility/nebulon_k8s_arc_demo.yml
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod with auto K8s to Azure Arc workflow
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_create_npod,
+        npod_name: "HPE Discover Azure Arc Demo",
+        npod_template: "Ubuntu 22.04.4 Base Auto",
+        npod_group: "Kubernetes" }
