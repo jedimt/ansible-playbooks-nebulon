@@ -26,19 +26,6 @@
     - jedimt.authorized_keys
 
 # ===========================================================================
-# Update Ansible controller SSH keys
-# ===========================================================================
-- name: Update SSH keys for Ansible controller known_hosts
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  become: false
-  tags: play_ssh_sync
-
-  roles:
-    - jedimt.ssh
-
-# ===========================================================================
 # Disable APT automatic updates/upgrades
 # ===========================================================================
 - name: Disable APT updates and upgrades

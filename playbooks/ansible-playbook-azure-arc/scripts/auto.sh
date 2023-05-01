@@ -56,6 +56,7 @@ if [ "$HOSTNAME" = server-09 ]; then
     #Run the Ansible playbook
     printf '%s\n' "${BLUE}Exceuting Ansible playbook!${NORMAL}"
     cd ~/ansible-playbooks-nebulon
+    echo "Nebulon123!" > .vault_pass
     ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-azure-arc/onboard_k8s.yml
 
 else
