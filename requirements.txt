@@ -1,0 +1,4 @@
+nebpyclient==2.0.8  # Nebulon playbooks
+pyvmomi==8.0.0.1.2  # VMware playbooks
+jmespath            # VMware playbooks
+kubernetes==26.1.0  # Kubernetes playbooks
