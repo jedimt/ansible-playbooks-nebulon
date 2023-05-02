@@ -4,7 +4,8 @@ mgt_ip: 10.100.25.40
 data_net: 10.100.25.41/22
 mgt_net: 10.100.25.40/22
 mgt_int: eno1
-data_int: eno5
+data_int: eno5np0
+data_int_2: eno6np1
 demopod: hpe
 route: 10.100.24.0/22
 mgt_route_table: 100
