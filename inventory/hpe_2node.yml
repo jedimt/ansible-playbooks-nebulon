@@ -1,0 +1,118 @@
+# Variables to use specific to localhost (for working with APIs)
+all:
+  hosts:
+    localhost:
+      # Since there are multiple physical groups of systems I specify
+      # a grouping of equipment to use for naming the nPod. This is unique
+      # per inventory.
+      demopod: "hpe"
+      # How to wait (in minutes) for hosts to boot after nPod creation
+      wait_hosts: 3
+      # Netmask for data ports on Medusa cards (TME=24; Demopods=28)
+      netmask_bits: 24
+      # vCenter variables unique to the HPE systems
+      vcenter_hostname: "hpevcsa.tme.nebulon.com"
+
+# Physical server inventory
+servers:
+  hosts:
+    server-07.tme.nebulon.com:
+      spu_serial: 0123F5132F06C5C5EE
+      spu_address: 10.100.29.116
+    server-08.tme.nebulon.com:
+      spu_serial: 0123237A9F163BAD19
+      spu_address: 10.100.29.113
+##### /VMware Bare Metal #####
+
+##### K8s Inventory #####
+# Physical inventory for bare metal K8s deployments
+k8s:
+  hosts:
+    server-07.tme.nebulon.com:
+    server-08.tme.nebulon.com:
+  children:
+    k8s_master:
+      hosts:
+        server-07.tme.nebulon.com:
+    k8s_nodes:
+      hosts:
+        server-08.tme.nebulon.com:
+##### /K8s Inventory #####
+
+spus:
+  hosts:
+    medusa-a911.tme.nebulon.com:
+    medusa-b045c.tme.nebulon.com:
+  vars:
+    ansible_python_interpreter: auto_silent
+
+# VMware Bare metal
+vmware:
+  hosts:
+    server-07.tme.nebulon.com:
+    server-08.tme.nebulon.com:
+  vars:
+    vcsa_name: "hpevcsa.tme.nebulon.com"
+    vcsa_size: "small"
+    vcenter_ip: 10.100.24.20
+    vcsa_gw: 10.100.24.1
+    vcsa_cidr: 22
+    vcsa_dns: 10.100.72.10
+    vcsa_ntp: 10.100.72.10
+    vcsa_sso_domain: "vsphere.local"
+    vcsa_sso_password: "{{ vault_vcsa_sso_password }}"
+    vcsa_password: "{{ vault_vcsa_sso_password }}"
+    vcsa_network: "VM Network"
+# VCSA
+vcsa:
+  hosts:
+    hpevcsa.tme.nebulon.com:
+
+# Cassandra
+cassandara:
+  hosts:
+    server-07.tme.nebulon.com:
+    server-08.tme.nebulon.com:
+
+cassandra_seed:
+  hosts:
+    server-07.tme.nebulon.com:
+
+# Bare metal MongoDB
+# I don't think I acually need mongo_all, but will need to test with using the 'mongo' group instead
+mongo_all:
+  hosts:
+    server-07.tme.nebulon.com:
+    server-08.tme.nebulon.com:
+
+mongo:
+  hosts:
+    server-07.tme.nebulon.com:
+    server-08.tme.nebulon.com:
+  children:
+    mongo_master:
+      hosts:
+        server-07.tme.nebulon.com:
+    mongo_replicas:
+      hosts:
+        server-08.tme.nebulon.com:
+
+redfish:
+  hosts:
+    server-07-lom.tme.nebulon.com:
+      baseuri: server-07-lom.tme.nebulon.com
+    server-08-lom.tme.nebulon.com:
+      baseuri: server-08-lom.tme.nebulon.com
+
+myhosts:
+  children:
+    redfish:
+  vars:
+    username: Administrator
+    password: "{{ vault_ilom_password }}"
+    # Local directory where all results are placed
+    rootdir: ../../../results
+
+    # Shorter name for inventory_hostname
+    # Refers to the logical inventory hostname (example: redfish1)
+    host: "{{ inventory_hostname }}"

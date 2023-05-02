@@ -1,6 +1,6 @@
 ---
 # Example Invocation:
-# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-utility/nebulon_k8s_arc_demo.yml
+# ansible-playbook -i inventory/hpe_2node.yml playbooks/ansible-playbook-utility/nebulon_k8s_arc_demo.yml
 
 # ===========================================================================
 # Create Nebulon nPod
