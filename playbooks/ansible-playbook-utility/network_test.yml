@@ -1,0 +1,72 @@
+---
+# Used this to smoke out what interfaces to use for netplan config for Kubernetes
+# Example invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-utility/network_test.yml
+
+- name: Find secondary interfaces
+  hosts: servers[0]
+
+  vars_files:
+    - ../../credentials.yml
+
+  tasks:
+
+    # Populate the ansible_interfaces magic variable
+    - name: Get list of Ansible network adapters
+      ansible.builtin.setup:
+        gather_subset:
+          - network
+
+    # Look for all adapters that are up. Expecting two interfaces in this environment
+    - name: Get a list of candidate adapters
+      ansible.builtin.shell:
+        ip a | grep "BROADCAST" | grep -v "NO-CARRIER" | awk '{ print $2 }' | cut -d ':' -f 1
+      register: interface_results
+      changed_when: false
+      # Return in TME environment:
+      #  [
+      #     "ens3f0np0",
+      #     "ens3f1np1"
+      # ]
+
+      # Return in demopod environment:
+      #  [
+      #     "eno1",
+      #     "eno5"
+      # ]
+
+    - name: Store candidate interfaces
+      ansible.builtin.set_fact:
+        candidate_interfaces: "{{ interface_results.stdout_lines }}"
+
+    # Build a list of down interfaces. In environments with more than 2 network interfaces
+    # I use this to filter out interfaces for the netplan configuration
+    - name: Filter list of down interfaces
+      ansible.builtin.set_fact:
+        down_interfaces: "{{ (ansible_interfaces | difference(candidate_interfaces) | \
+                        difference(['lo']) | \
+                        difference(hostvars[inventory_hostname]['ansible_default_ipv4']['interface'])) }}"
+      # Return in TME environment:
+      # "down_interfaces": [] <- only two interfaces in this environment (excludes the up interfaces)
+
+      # Return in DemoPod environment:
+      # "down_interfaces": [ <- Six interfaces in the demopod environment (excludes the up interfaces)
+      #     "eno2",
+      #     "eno4",
+      #     "eno6",
+      #     "eno3"
+      # ]
+
+    # Determine the secondary interface to add to the NetPlan configuration.
+    # This interface will be disabled in the NetPlan config to avoid issues in Kubernetes environments with traffic routing
+    - name: Determine 2nd interface
+      ansible.builtin.set_fact:
+        secondary_interface: "{{ (ansible_interfaces | difference(down_interfaces)) | \
+                        difference(['lo']) | \
+                        difference(hostvars[inventory_hostname]['ansible_default_ipv4']['interface']) | \
+                        join('') }}"
+      # Return in TME environment:
+      # "secondary_int_filtered": "ens3f1np1"
+
+      # Return in the demopod environment:
+      # "secondary_int_filtered": "eno5"
