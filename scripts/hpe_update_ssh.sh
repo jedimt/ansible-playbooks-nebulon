@@ -1,2 +1,2 @@
 #!/bin/bash
-ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-utility/update_ssh_known_hosts.yml
+ansible localhost -i inventory/hpe.yml -m include_role -a name=jedimt.ssh
