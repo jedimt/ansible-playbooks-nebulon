@@ -8,6 +8,8 @@ all:
       demopod: "hpe"
       # How to wait (in minutes) for hosts to boot after nPod creation
       wait_hosts: 3
+      # How long to wait for scripted install of ESXi
+      wait_hosts_esxi_install: 15
       # Netmask for data ports on Medusa cards (TME=24; Demopods=28)
       netmask_bits: 24
       # vCenter variables unique to the HPE systems

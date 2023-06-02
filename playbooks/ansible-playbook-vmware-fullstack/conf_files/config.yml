@@ -1,0 +1,65 @@
+---
+# This config file is used by the "nebulon-x" scripts for ESXi customization that are not currently part of the repo.
+# The python scripts need sanitation and a good refactor to clean up before release
+# Provided for reference only
+
+  nebulon:
+    username: "<your username>"
+    password: "<your password>"
+
+  servers:
+    - serial: J100MY0A
+      hostname: server-09.tme.nebulon.com
+      ip: 10.100.25.46
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: J100KY4V
+      hostname: server-10.tme.nebulon.com
+      ip: 10.100.25.49
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: J100KY4R
+      hostname: server-11.tme.nebulon.com
+      ip: 10.100.25.52
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: J100KY4T
+      hostname: server-12.tme.nebulon.com
+      ip: 10.100.25.55
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: 2M200701S7
+      hostname: server-05.tme.nebulon.com
+      ip: 10.100.25.34
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: 2M204008K6
+      hostname: server-06.tme.nebulon.com
+      ip: 10.100.25.37
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: 2M294204JQ
+      hostname: server-07.tme.nebulon.com
+      ip: 10.100.25.40
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11
+
+    - serial: 2M211203XX
+      hostname: server-08.tme.nebulon.com
+      ip: 10.100.25.43
+      netmask: 255.255.252.0
+      gateway: 10.100.24.1
+      nameserver: 10.100.24.11

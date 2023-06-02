@@ -1,0 +1,275 @@
+---
+# This playbook does a full end-to-end installation of a vSphere cluster. ESXi is installed via a customized
+# KS.CFG file as opposed to a disk image. This is done for supportability reasons although the imaging process
+# works well.
+
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_vsphere8_iso.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-vmware-fullstack/vmware_fullstack_playbook_vsphere8_iso.yml
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_create_npod,
+        npod_name: "{{ demopod }}_VMware",
+        npod_template: "ESXi 8.0 ISO Install",
+        npod_group: "vSphere"}
+
+# ===========================================================================
+# Mount ESXi ISO image to iLOM for automated ESXi installation process
+# ===========================================================================
+- name: Manage virtual media
+  hosts: redfish
+  connection: local
+  gather_facts: false
+  tags: play_attach_media
+
+  vars:
+    boot_iso_file: "http://homes.sc0.nebulon.com/aaron/esxi_cust_iso/nebulon_esxi_auto.iso"
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+
+    - name: Eject Virtual Media
+    # First make sure there is no virtual media mounted to avoid stale handles that can cause failures to boot to the virtual CD-ROM
+      community.general.redfish_command:
+        category: Systems
+        command: VirtualMediaEject
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        virtual_media:
+          image_url: '{{ boot_iso_file }}'
+      when: hostvars['localhost']['reboot_required']
+
+    - name: Insert Virtual Media
+    # Mount the virtual media to the host
+      community.general.redfish_command:
+        category: Systems
+        command: VirtualMediaInsert
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        virtual_media:
+          image_url: '{{ boot_iso_file }}'
+          media_types:
+            - CD
+            - DVD
+      when: hostvars['localhost']['reboot_required']
+
+    - name: Set one-time boot device to virtual media
+    # Boot devices vary depending on platform
+    # Lenovo: ['None', 'Pxe', 'Cd', 'Usb', 'Hdd', 'BiosSetup', 'Diags', 'UefiTarget']
+      community.general.redfish_command:
+        category: Systems
+        command: SetOneTimeBoot
+        bootdevice: "Cd"
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      when: hostvars['localhost']['reboot_required']
+
+    - name: Reboot servers to start ESXi install
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Pause to give ESXi scripted install time to complete
+# ===========================================================================
+- name: Wait for hosts to finish ESXi install
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to complete ESXi install
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts_esxi_install }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Remove virtual media after ESXi install
+# ===========================================================================
+- name: Eject virtual media
+  hosts: redfish
+  connection: local
+  gather_facts: false
+  tags: play_remove_media
+
+  vars:
+    boot_iso_file: "http://homes.sc0.nebulon.com/aaron/esxi_cust_iso/nebulon_esxi_auto.iso"
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+    - name: Eject Virtual Media
+      community.general.redfish_command:
+        category: Systems
+        command: VirtualMediaEject
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        virtual_media:
+          image_url: '{{ boot_iso_file }}'
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Customize ESXi
+# ===========================================================================
+- name: Customize ESXi
+  hosts: vmware
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    ansible_python_interpreter: /bin/python
+    # Specifying the ansible_password variable to avoid password prompt or '-k' flag
+    ansible_password: "{{ vault_esxi_password }}"
+
+  roles:
+    - jedimt.vmware_customize_esxi
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tags: play_ssh_sync
+
+  roles:
+    - jedimt.ssh
+
+# ===========================================================================
+# Deploy embedded VCSA to ESXi host
+# ===========================================================================
+- name: Deploy a self-hosted VCSA on ESXi host
+  hosts: ['vmware[0]']
+  gather_facts: true
+  tags: play_vcsa_install
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3 # required if "python" is not symlinked to python3
+
+  roles:
+    - { role: jedimt.vmware_vcsa_embedded_install,
+        # vSphere major version (7|8)
+        vsphere_version: "8",
+        # We have to use HTTPS for ovftool to be happy
+        # HTTPS Path to the VCSA OVF file (and VMDKs)
+        # vSphere 7.0 U3g
+        vcsa_ovf_7: "https://homes.sc0.nebulon.com/aaron/files/vmware/ovf7/vcsa703.ovf",
+        # vSphere 8.0 U1
+        vcsa_ovf_8: "https://homes.sc0.nebulon.com/aaron/files/vmware/ovf_8.0.1.00000/vcsa_8.0.1.00000.ovf"
+    }
+
+- name: Wait for VCSA installation to complete
+  hosts: vcsa
+  gather_facts: false
+  tags: play_vcsa_install_complete
+
+  vars:
+    ansible_python_interpreter: /bin/python
+    # Use ansible_password when no SSH keys installed on the VCSA.
+    ansible_password: "{{ vault_esxi_password }}"
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+
+    - name: Check for successful VCSA deployment
+      ansible.builtin.command:
+        ls /var/log/firstboot/succeeded
+      register: vcsa_status
+      retries: 30
+      delay: 20
+      until: vcsa_status is success
+      changed_when: false
+      tags: vcsa_test
+
+# ===========================================================================
+# Customize the VCSA installation
+# ===========================================================================
+- name: Customize VCSA
+  hosts: localhost
+  connection: local
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vault_vcenter_password }}'
+      validate_certs: false
+    vmware_host:
+      datacenter_name: '{{ vcenter_datacenter }}'
+      cluster_name: '{{ vcenter_cluster }}'
+      esxi_username: '{{ esxi_username }}'
+      esxi_password: '{{ vault_esxi_password }}'
+    vmware_host_service_manager:
+      cluster_name: '{{ vcenter_cluster }}'
+    vmware_host_config_manager:
+      cluster_name: '{{ vcenter_cluster }}'
+    vmware_datastore_info:
+      datacenter_name: '{{ vcenter_datacenter }}'
+
+  tags: play_vcsa_customize
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.vmware_vcsa_customization
+
+# ===========================================================================
+# Clone template VM to VCSA
+# ===========================================================================
+- name: Clone template VM to VCSA
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  module_defaults:
+    group/vmware:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vault_vcenter_password }}'
+      validate_certs: false
+  tags: play_clone_template
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.clone_template
