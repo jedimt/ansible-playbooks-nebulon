@@ -6,3 +6,7 @@ playbooks/vmware_image/files/config.yaml
 results
 credentials.yml
 serials.yml
+# Scripts folder has python scripts that are not ready to be released
+playbooks/ansible-playbook-vmware-fullstack/scripts
+# altbootbank.tar.gz is for use with the python scripts
+altbootbank.tar.gz
