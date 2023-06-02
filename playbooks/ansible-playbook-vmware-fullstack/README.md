@@ -1,13 +1,14 @@
 Playbook: VMware Full Stack Deployment
 ======================================
 
-There are two playbooks in this folder:
+There are three playbooks in this folder:
 
 - `vmware_fullstack_playbook_vsphere8.yml` -> Creates a nPod using existing ESXi image, deploys a VCSA (version 8.x) to the nPod, adds the ESXi hosts to the self-hosted VCSA and clones a template to the vSphere cluster.
 - `vmware_fullstack_playbook_vsphere7.yml` -> Creates a nPod using existing ESXi image, deploys a VCSA (version 7.x) to the nPod, adds the ESXi hosts to the self-hosted VCSA and clones a template to the vSphere cluster.
 
-**_NOTE_**: This set of playbooks relies on an unsupported method of customizing a templated image of ESXi and is for demonstration purposes only.
+**_NOTE_**: The preceeding playbooks rely on an unsupported method of customizing a templated image of ESXi and is for demonstration purposes only.
 
+- `vmware_fullstack_playbook_vsphere8_iso.yml` -> Uses a customized ESXi ISO image to automate the installation of ESXi. This is a supported method for deploying ESXi, however it requires creating a custom ISO and managing the virtual media state on the server out of band management controller (iLOM, iDRAC, XCC, etc) which makes it slower and more error prone. Instructions for creating a customized ISO image can be found in the [Appendix A](https://on.nebulon.com/docs/en-us/solutions/vmware-vsphere/11a2ae83f5ce16d8975f3917eff34a39) section of the VMware vSphere solutions guide at on.nebulon.com/docs.
 
 Prerequisites
 -------------
@@ -47,6 +48,8 @@ all:
       demopod: "lenovo"
       # How to wait (in minutes) for hosts to boot after nPod creation
       wait_hosts: 3
+      # How long to wait for scripted install of ESXi
+      wait_hosts_esxi_install: 15
       # Netmask for data ports on Medusa cards (TME=24; Demopods=28)
       netmask_bits: 24
       # vCenter variables unique to the Lenovo systems

@@ -24,7 +24,9 @@
         npod_template: "ESXi 8.0",
         npod_group: "vSphere"}
 
-# Wait for hosts to boot up
+# ===========================================================================
+# Wait for hosts to complete initial boot after being reset by create_npod
+# ===========================================================================
 - name: Wait for hosts to reboot
   hosts: localhost
   gather_facts: false
