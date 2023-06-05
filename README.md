@@ -3,7 +3,7 @@ Ansible Playbooks for Nebulon
 
 ** NOTICE: This repo is still a work in progress and not fully actualized **
 
-This repo contains a set of curated Ansible playbooks focused on deploying solution sets for the TME and SE labs at Nebulon. These playbooks are focused on full stack deployments of the following solutions:
+This repo contains a set of curated Ansible playbooks focused on deploying solution sets for the TME and SE labs at Nebulon. These playbooks are provided for educational use only and are not officially supported by Nebulon support staff. The playbooks are focused on full stack deployments of the following solutions:
 
 - VMware (bare-metal)
 - Kubernetes (bare-metal)
