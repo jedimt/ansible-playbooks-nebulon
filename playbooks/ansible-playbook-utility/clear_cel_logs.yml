@@ -1,0 +1,23 @@
+---
+# Clear the hardware logs for servers
+
+# Example invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-utility/clear_cel_logs.yml
+
+- hosts: myhosts
+  connection: local
+  name: Clear System Logs
+  gather_facts: false
+
+  vars_files:
+    - ../../credentials.yml
+
+  tasks:
+
+    - name: Clear Logs
+      community.general.redfish_command:
+        category: Manager
+        command: ClearLogs
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ vault_ilom_password }}"
