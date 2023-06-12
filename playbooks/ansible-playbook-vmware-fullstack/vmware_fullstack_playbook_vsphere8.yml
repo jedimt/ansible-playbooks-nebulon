@@ -20,6 +20,7 @@
 
   roles:
     - { role: jedimt.nebulon_create_npod,
+        # If you change nPod name here, change also in "Enable Nebulon vCenter integration" play
         npod_name: "{{ demopod }}_VMware",
         npod_template: "ESXi 8.0",
         npod_group: "vSphere"}
@@ -177,3 +178,31 @@
 
   roles:
     - jedimt.clone_template
+
+# ===========================================================================
+# Enable Nebulon <-> vCenter integration
+# ===========================================================================
+- name: Nebulon vCenter integration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tags: play_vcenter_integration
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+    # Enable vCenter to Nebulon ON integration
+    - name: Enable the Nebulon <-> vCenter integration
+      nebulon.nebulon_on.neb_vcenter:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        npod_name: "{{ demopod }}_VMware"
+        vcenter_username: "{{ vault_vcenter_username }}"
+        vcenter_password: "{{ vault_vcenter_password }}"
+        vcenter_network_identity: "{{ vcenter_hostname }}"
+        enable_affinity_rules: true
+        insecure: false
+        state: present
