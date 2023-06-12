@@ -35,3 +35,7 @@ roles:
 
 collections:
   - name: nebulon.nebulon_on
+  - name: community.general
+  - name: communit.vmware
+  - name: kubernetes.core
+  - name: ansible.posix
