@@ -72,12 +72,12 @@
   roles:
     - jedimt.apt
 
-# # ===========================================================================
-# # Network configuration
-# # ===========================================================================
-# - name: Configure netplan and DNS settings
-#   hosts: servers
-#   tags: play_network_setup
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  tags: play_network_setup
 
-#   roles:
-#     - jedimt.network_setup
+  roles:
+    - jedimt.network_setup
