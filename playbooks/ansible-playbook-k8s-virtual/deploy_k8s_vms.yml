@@ -4,6 +4,7 @@
 
 # Example Invocation:
 # ansible-playbook -i inventory/lenovo-brb.yml playbooks/ansible-playbook-k8s-virtual/deploy_k8s_vms.yml
+# ansible-playbook -i inventory/hpe-brb.yml playbooks/ansible-playbook-k8s-virtual/deploy_k8s_vms.yml
 
 # ===========================================================================
 # Deploy VMs
@@ -27,7 +28,40 @@
 
   roles:
     - { role: jedimt.deploy_vms,
-        ansible_password: "{{ vault_ansible_password }}"
+        ansible_password: "{{ vault_ansible_password }}",
+        # vCenter datacenter to deploy VMs to
+        vcenter_datacenter: 'SC0',
+
+        # Folder where the VMs should be deployed
+        vcenter_folder: '/{{ vcenter_datacenter }}/vm/Kubernetes',
+
+        # vCenter cluster to use
+        vcenter_cluster: 'AppFactory',
+
+        # vCenter IP or FQDN
+        vcenter_hostname: 'devvcsa.tme.nebulon.com',
+
+        # The VM network name to attach to the VM
+        guest_network: 'dvs_appfactory-vmnetwork',
+
+        # Netmask to use for guest IP address (defined in inventory by default)
+        guest_netmask: '255.255.252.0',
+
+        # Guest IPv4 gateway
+        guest_gateway: '10.100.24.1',
+
+        # DNS server
+        guest_dns_server: '10.100.24.11',
+
+        # Domain search
+        guest_domain_name: 'tme.nebulon.com',
+
+        # Guest template to clone for VMs
+        guest_template: 'ubuntu20.04.4_local',
+
+        # Vault credentials
+        vcenter_username: "{{ vault_vcenter_username }}",
+        vcenter_password: "{{ vault_vcenter_password }}"
     }
 
 # ===========================================================================
@@ -103,7 +137,7 @@
 # ===========================================================================
 - name: Kubernetes pre-install tasks
   hosts: servers
-  tags: k8s
+  tags: play_k8s_prep
 
   vars_files:
     # Ansible vault with all required passwords
@@ -189,7 +223,14 @@
   tags: play_metallb
 
   roles:
-    - jedimt.kubernetes_metallb
+    - { role: jedimt.kubernetes_metallb,
+        # Lenovo range:
+        # metallb_start: 10.100.24.48,
+        # metallb_end: 10.100.24.52
+        # HPE range:
+        metallb_start: 10.100.24.85,
+        metallb_end: 10.100.24.89
+    }
 
 # ===========================================================================
 # Install the VMware CSI driver
@@ -206,8 +247,12 @@
 
   roles:
     - { role: jedimt.vmware_csi,
-        vcenter_ip: "10.100.24.31",
-        vcenter_hostname: "devvcsa.tme.nebulon.com",
+        # Lenovo Systems:
+        # vcenter_ip: "10.100.24.31",
+        # vcenter_hostname: "devvcsa.tme.nebulon.com",
+        # HPE Systems:
+        vcenter_ip: "10.100.24.20",
+        vcenter_hostname: "hpevcsa.tme.nebulon.com",
         vcenter_datacenter: "SC0"
     }
 
