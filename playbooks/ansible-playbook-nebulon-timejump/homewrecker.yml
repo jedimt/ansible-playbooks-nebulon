@@ -69,7 +69,7 @@
         neb_password: "{{ vault_neb_password }}"
         volume_uuids: "{{ item }}"
         name_patterns:
-          - 'brb_rollback_%v_%y-%m-%d_%H:%M'
+          - 'TimeJump_rollback_%v_%y-%m-%d_%H:%M'
         expiration_seconds: "{{ neb_snapshot_expiration_seconds }}"
         retention_seconds: "{{ neb_snapshot_retention_seconds }}"
         state: present
