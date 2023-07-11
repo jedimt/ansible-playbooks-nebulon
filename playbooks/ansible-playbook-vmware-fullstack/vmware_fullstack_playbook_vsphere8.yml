@@ -204,5 +204,5 @@
         vcenter_password: "{{ vault_vcenter_password }}"
         vcenter_network_identity: "{{ vcenter_hostname }}"
         enable_affinity_rules: true
-        insecure: false
+        insecure: true
         state: present
