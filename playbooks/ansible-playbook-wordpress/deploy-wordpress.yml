@@ -48,5 +48,8 @@
         mysql_image: mysql:8.0.32-oracle,
 
         # Storage class for persistent volumes
-        storage_class: "nebulon"
+        # Physical bare metal deployments with Nebulon CSI driver:
+        # storage_class: "nebulon"
+        # Virtual K8s with VMware CSI driver
+        storage_class: "vmw-block-sc"
     }
