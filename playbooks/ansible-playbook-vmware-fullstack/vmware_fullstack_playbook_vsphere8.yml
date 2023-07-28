@@ -195,6 +195,7 @@
 
   tasks:
     # Enable vCenter to Nebulon ON integration
+    # Requires NebOS 1.3.18+ and Nebulon Ansible module 1.4.2+
     - name: Enable the Nebulon <-> vCenter integration
       nebulon.nebulon_on.neb_vcenter:
         neb_username: "{{ vault_neb_username }}"
