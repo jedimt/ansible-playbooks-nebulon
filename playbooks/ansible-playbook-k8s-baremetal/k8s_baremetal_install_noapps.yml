@@ -19,7 +19,7 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: jedimt.nebulon_create_npod, npod_name: "K8s_Lenovo" }
+    - { role: jedimt.nebulon_create_npod, npod_name: "K8s_{{ demopod }}" }
 
 # Wait for hosts to boot up
 - name: Wait for hosts to reboot
@@ -103,7 +103,7 @@
     - "../../credentials.yml"
 
   roles:
-    - jedimt.kubernetes_prep
+    - { role: jedimt.kubernetes_prep, k8sversion: "1.27.4-00" }
 
 # ===========================================================================
 # Create Kubernetes cluster
