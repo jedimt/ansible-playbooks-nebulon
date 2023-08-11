@@ -1,0 +1,159 @@
+---
+# Pivot the boot lun for updating server images in place
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-api/pivot_lun.yml
+
+# ===========================================================================
+# NOTE - This is an incomplete playbook - WIP
+# ===========================================================================
+
+- name: Invoke Nebulon UCAPI endpoint
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+  #   ucapi_url: 'https://ucapi.nebcloud.nebuloninc.com:9191/query'
+  #   neb_username: "{{ vault_neb_username }}"
+  #   neb_password: "{{ vault_neb_password }}"
+    npod_name: "test_lun_replacement"
+
+  tasks:
+
+    - name: Get nPod details
+      nebulon.nebulon_on.neb_npod_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod_name }}"
+      register: npod_result
+
+    # Set the npod_uuid variable
+    - name: Set nPod UUID variable
+      ansible.builtin.set_fact:
+        npod_uuid: "{{ npod_result.npods[0].uuid }}"
+
+# Return:
+# ok: [localhost] => {
+#     "npod_result": {
+#         "ansible_facts": {
+#             "discovered_interpreter_python": "/usr/bin/python3"
+#         },
+#         "changed": false,
+#         "failed": false,
+#         "npods": [
+#             {
+#                 "creation_time": "2023-08-11T14:47:57",
+#                 "host_count": 4,
+#                 "host_uuids": [
+#                     "1e36d01a-f936-4249-9045-28232bb103e7",
+#                     "3333a278-414b-45d1-8972-611115c76f87",
+#                     "9e8ba77c-8e09-4c69-b893-876742f83f34",
+#                     "ad5a5431-17e1-4023-8373-a6cf64cc5151"
+#                 ],
+#                 "name": "test_lun_replacement",
+#                 "note": "",
+#                 "npod_group_uuid": "a69a1560-1173-487c-b123-dc9d93de74ad",
+#                 "npod_template_uuid": "5a431526-af5d-4c26-b8a6-9974cd575f7a",
+#                 "recommended_package": null,
+#                 "snapshot_uuids": [],
+#                 "spu_count": 4,
+#                 "spu_serials": [
+#                     "01231C5BA68435FC19",
+#                     "012386435A39449519",
+#                     "01234C1DDA95332EEE",
+#                     "01236AE13059FD35EE"
+#                 ],
+#                 "update_history": [],
+#                 "uuid": "83665d97-72a4-43b4-a4df-6efc8eab4c95",
+#                 "volume_count": 5,
+#                 "volume_uuids": [
+#                     "286876d0-3a53-42f7-9fd1-505960f05176",
+#                     "cba3ad91-3ebd-4c1c-be57-9adad2f10518",
+#                     "17a3b167-1931-41ce-a4d0-ebc65cb787aa",
+#                     "467c5ed6-f460-4ba7-b930-6e0c64023076",
+#                     "0e16c214-9db6-4f68-ad48-df6e7bacff8a"
+#                 ]
+#             }
+#         ]
+#     }
+# }
+
+    - name: Look up SPU serial and IP information
+      ansible.builtin.set_fact:
+        spus: "{{ lookup('nebulon.nebulon_on.neb_spu_lookup', 'servers') }}"
+
+    - name: Extract SPU serials
+      ansible.builtin.set_fact:
+        spu_serials: "{{ spus | map(attribute='spu_serial') | list }}"
+
+# Return:
+# ok: [localhost] => {
+#     "spu_serials": [
+#         "012386435A39449519",
+#         "01231C5BA68435FC19",
+#         "01234C1DDA95332EEE",
+#         "01236AE13059FD35EE"
+#     ]
+# }
+    # - name: Debug npod
+    #   ansible.builtin.debug:
+    #     var: npod_result
+
+    # - name: Debug spu_serials
+    #   ansible.builtin.debug:
+    #     var: spu_serials
+
+
+
+    # The module expects volume UUIDs so we go ahead and get a list of volumes
+    - name: Get nPod volumes
+      nebulon.nebulon_on.neb_volume_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        npod_uuid: "{{ npod_uuid }}"
+        base_only: true
+      register: npod_volumes
+
+# Return:
+    # "npod_volumes": {
+    #     "changed": false,
+    #     "failed": false,
+    #     "volumes": [
+    #         {
+    #             "accessible_by_host_uuids": [
+    #                 "3333a278-414b-45d1-8972-611115c76f87"
+    #             ],
+    #             "boot": true,
+    #             "creation_time": "2023-08-11T14:49:36",
+    #             "current_owner_host_uuid": "3333a278-414b-45d1-8972-611115c76f87",
+    #             "expiration_time": null,
+    #             "lun_uuids": [
+    #                 "52226a39-b1ef-40ea-bd0a-f96bd4eb363d"
+    #             ],
+    #             "name": "test_lun_replacement_server-11.tme.nebulon.com_os",
+    #             "natural_backup_host_uuid": null,
+    #             "natural_backup_spu_serial": null,
+    #             "natural_owner_host_uuid": "3333a278-414b-45d1-8972-611115c76f87",
+    #             "natural_owner_spu_serial": "01234C1DDA95332EEE",
+    #             "npod_uuid": "83665d97-72a4-43b4-a4df-6efc8eab4c95",
+    #             "read_only_snapshot": false,
+    #             "size_bytes": 64424509440,
+    #             "snapshot_parent_uuid": null,
+    #             "snapshot_uuids": [],
+    #             "sync_state": "NotMirrored",
+    #             "uuid": "286876d0-3a53-42f7-9fd1-505960f05176",
+    #             "wwn": "6f497c2008fc081d000ab00000002000"
+    #         },
+
+    - name: Debug npod_volumes
+      ansible.builtin.debug:
+        var: npod_volumes
+
+    # # Extract the volume UUIDs
+    # - name: Extract all nPod volume UUIDs
+    #   ansible.builtin.set_fact:
+    #     volume_uuid: "{{ npod_volumes.volumes | map(attribute='uuid') | list }}"

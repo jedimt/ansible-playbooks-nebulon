@@ -1,0 +1,9 @@
+query {
+  getNPods (filter: { name: {equals: "{{ npod_name }}" }}) {
+    items {
+      name, uuid, spus { serial }, volumes {
+        name, luns { uuid, lunID }
+      }
+    }
+  }
+}

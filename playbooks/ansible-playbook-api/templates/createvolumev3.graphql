@@ -1,0 +1,23 @@
+mutation createVolumeV3($input: CreateVolumeInputV2!) {
+  createVolumeV3(input: $input) {
+    token
+    waitOn
+    targetIPs
+    dataTargetIPs
+    mustSendTargetDNS {
+        controlPortDNS
+        dataPortDNS
+    }
+    issues {
+        warnings {
+            spuSerials
+            message
+        }
+        errors {
+            spuSerials
+            message
+        }
+    }
+    Ips
+  }
+}

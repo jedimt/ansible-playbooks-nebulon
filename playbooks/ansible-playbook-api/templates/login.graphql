@@ -1,0 +1,9 @@
+mutation
+{
+    login
+    (
+        password: "{{ vault_neb_password }}",
+        username: "{{ vault_neb_username }}"
+    )
+    { success }
+}

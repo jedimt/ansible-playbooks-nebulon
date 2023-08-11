@@ -1,0 +1,117 @@
+---
+# Invoke the Nebulon UCAPI
+# Example Invocation:
+# ansible-playbook -i inventory/localhost.yml playbooks/ansible-playbook-api/nebulon_api.yml
+
+- name: Invoke Nebulon UCAPI endpoint
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    ucapi_url: 'https://ucapi.nebcloud.nebuloninc.com:9191/query'
+    neb_username: "{{ vault_neb_username }}"
+    neb_password: "{{ vault_neb_password }}"
+    npod_name: "test"
+
+  tasks:
+
+    - name: Log in to UCAPI
+      ansible.builtin.uri:
+        url: "{{ ucapi_url }}"
+        method: post
+        body_format: json
+        body:
+          query: '{{ lookup("template", "login.graphql") }}'
+        return_content: true
+      register: login_result
+
+    # - name: Print out login result
+    #   ansible.builtin.debug:
+    #     var: login_result
+    #     verbosity: 1
+
+    - name: Get list of nPods
+      ansible.builtin.uri:
+        url: "{{ ucapi_url }}"
+        method: POST
+        headers:
+          Cookie: '{{ login_result.cookies_string }}'
+        body_format: json
+        body:
+          query: '{{ lookup("template", "get_npods.graphql") }}'
+      register: api_return
+      connection: local
+
+    # - name: Print out API return
+    #   ansible.builtin.debug:
+    #     var: api_return
+
+    - name: Set nPod UUID
+      ansible.builtin.set_fact:
+        npod_data: "{{ api_return.json | json_query(jq) }}"
+      vars:
+        jq: "data.getNPods.items[].{npod_name: name, npod_uuid: uuid, spu_serial: spus[].serial, lun_name: volumes[].name, lun_uuid: volumes[].luns[].uuid}"
+
+# Return:
+# ok: [localhost] => {
+#     "npod_data": [
+#         {
+#             "lun_name": [
+#                 "test_server-11.tme.nebulon.com_os"
+#             ],
+#             "lun_uuid": [
+#                 "fd83a7e1-0069-4120-aaf4-288e652fce45"
+#             ],
+#             "npod_name": "test",
+#             "npod_uuid": "d37dac4e-fe41-4cd3-b504-76ba24ba1570",
+#             "spu_serial": [
+#                 "01234C1DDA95332EEE"
+#             ]
+#         }
+#     ]
+# }
+
+    # - name: Print out nPod UUID
+    #   ansible.builtin.debug:
+    #     var: npod_data
+
+    # - name: Print out volume name
+    #   ansible.builtin.debug:
+    #     var: npod_data[0].lun_name
+
+    - name: Set replacement volume name
+      ansible.builtin.set_fact:
+        volume_replacement_name: "{{ npod_data[0].lun_name | join('') }}_replacement"
+
+    - name: Print out replacment volume name
+      ansible.builtin.debug:
+        var: volume_replacement_name
+
+    # This is no longer needed as we match boot volume LUN ID 0 instead of UUID
+    # - name: Set boot LUN UUID
+    #   ansible.builtin.set_fact:
+    #     boot_lun_uuid: "{{ npod_data[0].lun_uuid | join('') }}"
+
+    # - name: Print out LUN UUID
+    #   ansible.builtin.debug:
+    #     var: boot_lun_uuid
+
+    - name: Set nPod UUID
+      ansible.builtin.set_fact:
+        npod_uuid: "{{ npod_data[0].npod_uuid | join('') }}"
+
+    # - name: Print out nPod UUID
+    #   ansible.builtin.debug:
+    #     var: npod_uuid
+
+    - name: Set SPU Serial
+      ansible.builtin.set_fact:
+        npod_uuid: "{{ npod_data[0].npod_uuid | join('') }}"
+
+    # - name: Print out nPod UUID
+    #   ansible.builtin.debug:
+    #     var: npod_uuid
