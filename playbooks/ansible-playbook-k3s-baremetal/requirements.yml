@@ -1,0 +1,13 @@
+---
+
+roles:
+  - name: jedimt.nebulon_create_npod
+  - name: jedimt.authorized_keys
+  - name: jedimt.ssh
+  - name: jedimt.apt
+  - name: jedimt.network_setup
+  - name: xanmanning.k3s
+  - name: jedimt.helm
+  - name: jedimt.nebulon_csi
+  - name: jedimt.golang
+  - name: jedimt.kubernetes_kube_prometheus

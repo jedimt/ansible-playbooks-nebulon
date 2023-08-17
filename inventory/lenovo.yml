@@ -50,6 +50,23 @@ k8s:
         server-12.tme.nebulon.com:
 ##### /K8s Inventory #####
 
+##### /K3s Inventory #####
+k3s_cluster:
+  hosts:
+    server-09.tme.nebulon.com:
+      k3s_control_node: true
+    server-10.tme.nebulon.com:
+      k3s_control_node: true
+    server-11.tme.nebulon.com:
+      k3s_control_node: true
+    server-12.tme.nebulon.com:
+      k3s_control_node: false
+  children:
+    k3s_master:
+      hosts:
+        server-09.tme.nebulon.com:
+##### /K3s Inventory #####
+
 spus:
   hosts:
     medusa-b0421.tme.nebulon.com:

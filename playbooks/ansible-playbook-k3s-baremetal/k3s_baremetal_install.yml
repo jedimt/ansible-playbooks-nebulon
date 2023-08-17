@@ -1,0 +1,137 @@
+---
+
+# This playbook does a full end-to-end installation of a bare metal Kubernetes cluster
+# including the Nebulon CSI driver and Kube-Prometheus.
+# Current supported configurations are 1 or 3+ nodes.
+# Two node configurations require external load balancer and Database and I have not put in that work yet
+# Reference: https://github.com/PyratLabs/ansible-role-k3s/blob/main/documentation/configuration/2-node-ha-ext-datastore.md
+
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-k3s-baremetal/k3s_baremetal_install.yml
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_create_npod,
+        npod_name: "K3s_{{ demopod }}",
+        npod_template: "Ubuntu 22.04.4 Base",
+        npod_group: "Kubernetes" }
+
+# Wait for hosts to boot up
+- name: Wait for hosts to reboot
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to come up - Minutes to wait {{ wait_hosts }}
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: k3s_cluster
+  gather_facts: false
+  become: false
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.authorized_keys
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tags: play_ssh_sync
+
+  roles:
+    - jedimt.ssh
+
+# ===========================================================================
+# Disable APT automatic updates/upgrades
+# ===========================================================================
+- name: Disable APT updates and upgrades
+  hosts: servers
+  gather_facts: false
+
+  roles:
+    - jedimt.apt
+
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  tags: play_network_setup
+
+  roles:
+    - jedimt.network_setup
+
+# ===========================================================================
+# K3s Installation (HA)
+# ===========================================================================
+- name: Install K3s in a HA configuration
+  hosts: k3s_cluster
+  tags: k3s_install
+
+  roles:
+    - { role: xanmanning.k3s,
+        k3s_etcd_datastore: true,         # Use an internal ETCD database
+        k3s_release_version: v1.27.4+k3s1 # Specify specific K3s build. Defaults to 'latest' if not defined
+    }
+
+# ===========================================================================
+# Install the Nebulon CSI driver
+# ===========================================================================
+- name: Nebulon CSI driver install
+  hosts: k3s_master
+  become: true
+  gather_facts: false
+  tags: play_nebulon_csi
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  # Specify the KUBECONFIG file location. Otherwise kubectl will not connect to the cluster
+  environment:
+    KUBECONFIG: '/etc/rancher/k3s/k3s.yaml'
+
+  roles:
+    - jedimt.helm
+    - { role: jedimt.nebulon_csi,
+        demopod: "{{ hostvars['localhost']['demopod'] }}" # Pull the 'demopod' variable out of the localhost hostvars
+    }
+
+# ===========================================================================
+# Install Kube-Prometheus
+# ===========================================================================
+- name: Install the Kube-Prometheus project
+  hosts: k3s_master
+  gather_facts: true
+  become: false
+  tags: play_prometheus
+
+  roles:
+    - jedimt.golang
+    - jedimt.kubernetes_kube_prometheus
