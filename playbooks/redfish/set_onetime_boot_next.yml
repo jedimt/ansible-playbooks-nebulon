@@ -1,0 +1,34 @@
+---
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-redfish/set_onetime_boot_next.yml
+
+- hosts: myhosts
+  connection: local
+  name: Set one-time boot device (UEFI boot next mode)
+  gather_facts: false
+  # Allowable values (HPE) (['None', 'Cd', 'Hdd', 'Usb', 'SDCard', 'Utilities', 'Diags', 'BiosSetup', 'Pxe', 'UefiShell', 'UefiHttp', 'UefiTarget'])"}
+
+  vars:
+    bootdevice: BiosSetup
+    boot_next: Boot0001
+
+  tasks:
+
+    - name: Set one-time boot device to {{ bootdevice }}
+      community.general.redfish_command:
+        category: Systems
+        command: SetOneTimeBoot
+        bootdevice: "{{ bootdevice }}"
+        boot_next: "{{ boot_next }}"
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: onetimeboot
+
+    - name: Reboot system
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      when: onetimeboot.changed
