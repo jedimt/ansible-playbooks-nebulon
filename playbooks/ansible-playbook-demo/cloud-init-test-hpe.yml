@@ -1,0 +1,140 @@
+---
+# Example invocation:
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-demo/cloud-init-test-hpe.yml
+
+- name: Test cloud-init
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    npod_name: "cloud_init_{{ demopod }}"
+    npod_template: "Ubuntu 22.04.4 NoLVM"
+    npod_group: "Kubernetes"
+    timezone: "US/Pacific"
+    npod_note: "Created by Ansible playbook"
+    npod_state: present
+
+    spus:
+      - spu_serial: 0123F7A8D51D48C819
+        cloud_init_user_data: |
+            #cloud-config
+            hostname: 2M200701S7
+
+            runcmd:
+              - echo "Test" > /var/test
+        ip_info_config:
+          - dhcp: false
+            bond_mode: BondMode8023ad
+            interfaces:
+              - "enP8p1s0f0np0"
+              - "enP8p1s0f1np1"
+            address: "10.100.29.114"
+            netmask_bits: 22
+      - spu_serial: 01238F123073C87119
+        cloud_init_user_data: |
+            #cloud-config
+            hostname: 2M204008K6
+
+            runcmd:
+              - echo "Test" > /var/test
+        ip_info_config:
+          - dhcp: false
+            bond_mode: BondMode8023ad
+            interfaces:
+              - "enP8p1s0f0np0"
+              - "enP8p1s0f1np1"
+            address: "10.100.29.115"
+            netmask_bits: 22
+      - spu_serial: 0123F5132F06C5C5EE
+        cloud_init_user_data: |
+            #cloud-config
+            hostname: 2M294204JQ
+
+            runcmd:
+              - echo "Test" > /var/test
+        ip_info_config:
+          - dhcp: false
+            bond_mode: BondMode8023ad
+            interfaces:
+              - "enP8p1s0f0np0"
+              - "enP8p1s0f1np1"
+            address: "10.100.29.116"
+            netmask_bits: 22
+      - spu_serial: 0123237A9F163BAD19
+        cloud_init_user_data: |
+            #cloud-config
+            hostname: 2M211203XX
+
+            runcmd:
+              - echo "Test" > /var/test
+        ip_info_config:
+          - dhcp: false
+            bond_mode: BondMode8023ad
+            interfaces:
+              - "enP8p1s0f0np0"
+              - "enP8p1s0f1np1"
+            address: "10.100.29.113"
+            netmask_bits: 22
+
+  tasks:
+    - name: Get nPod group UUID
+      nebulon.nebulon_on.neb_npod_group_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod_group }}"
+      register: npod_group_name
+      tags:
+        - npod_group
+
+    - name: Get nPod template UUID
+      nebulon.nebulon_on.neb_npod_template_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod_template }}"
+      register: npod_template_name
+      tags:
+        - npod_template
+
+    - name: Set facts
+      ansible.builtin.set_fact:
+        npod_group_uuid: "{{ npod_group_name.npod_groups[0].uuid }}"
+        npod_template_uuid: "{{ npod_template_name.npod_templates[-1].uuid }}"
+      tags:
+        - npod_template
+
+    # - name: Look up SPU serial and IP information
+    #   ansible.builtin.set_fact:
+    #     spus: "{{ lookup('nebulon.nebulon_on.neb_spu_lookup', 'servers') }}"
+
+    - name: Extract SPU serials
+      ansible.builtin.set_fact:
+        spu_serials: "{{ spus | map(attribute='spu_serial') | list }}"
+
+    - name: Verify SPUs not part of any existing nPod
+      nebulon.nebulon_on.neb_spu_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        spu_serials: "{{ spu_serials }}"
+        not_in_npod: true
+      register: npod_spus
+
+    # Disable linting due to warning that cannot be bypassed
+    - name: Create nPod # noqa: args[module]
+      nebulon.nebulon_on.neb_npod:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod_name }}"
+        npod_group_uuid: "{{ npod_group_uuid }}"
+        spus: "{{ spus }}"
+        npod_template_uuid: "{{ npod_template_uuid }}"
+        note: "{{ npod_note }}"
+        timezone: "{{ timezone }}"
+        ignore_warnings: true
+        state: "{{ npod_state }}"
+      register: npod_data
+      when: npod_spus.spus[0].serial is defined
