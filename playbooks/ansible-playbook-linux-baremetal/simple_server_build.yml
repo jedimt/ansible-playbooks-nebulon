@@ -19,8 +19,8 @@
 
   roles:
     - { role: jedimt.nebulon_create_npod,
-        npod_name: "nPod_Lenovo",
-        npod_temaplte: "Ubuntu 22.04.4 Base",
+        npod_name: "nPod_{{ demopod }}",
+        npod_template: "Ubuntu 22.04.4 Base",
         npod_group: "Demo" }
 
 # Wait for hosts to boot up
