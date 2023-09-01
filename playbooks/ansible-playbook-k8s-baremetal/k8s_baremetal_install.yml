@@ -104,7 +104,9 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: jedimt.kubernetes_prep, k8sversion: "1.27.4-00" }
+    - { role: jedimt.kubernetes_prep,
+        k8sversion: "1.28.0-00"
+    }
 
 # ===========================================================================
 # Create Kubernetes cluster
