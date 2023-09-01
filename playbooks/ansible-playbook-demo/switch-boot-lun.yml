@@ -1,0 +1,25 @@
+---
+# Example invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-demo/switch-boot-lun.yml
+
+- name: Test LUN switch
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    new_boot_img_url: "http://homes.sc0.nebulon.com/aaron/cloud-init/ubuntu2304/ubuntu_23.04_nolvm.img.xz"
+    npod: "cloud_init_{{ demopod }}"
+
+  tasks:
+
+    - name: Update nPod boot volume
+      nebulon.nebulon_on.neb_npod_update:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod }}"
+        boot_image_url: "{{ new_boot_img_url }}"

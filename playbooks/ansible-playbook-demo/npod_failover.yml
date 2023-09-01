@@ -1,0 +1,403 @@
+---
+# This playbook will demo copying all volumes from a source nPod to a target nPod
+# The following actions are performed:
+# Boot the source and target nPods into the UEFI BIOS
+# Create a snapshot of all volumes on the source nPod
+# Create volumes on the target nPod as destinations for the source volume copies
+# Invoke a copy of the source volumes to target volumes
+# Unexport the existing LUNs on the target nPod
+# Create new LUN exports on the target nPod
+# Reboot target nPod hosts
+
+# Example invocation:
+# ansible-playbook -i inventory/all-hosts.yml playbooks/ansible-playbook-demo/npod_failover.yml
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon target nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_create_npod,
+        npod_name: "Target_nPod_Lenovo",
+        npod_template: "copy_npod",
+        npod_group: "Demo" }
+
+# ===========================================================================
+# Create Target nPod Volumes
+# ===========================================================================
+- name: Create volume targets on the target nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    source_npod_name: "Source_nPod_HPE"
+    target_npod_name: "Target_nPod_Lenovo"
+    volume_size: "64424509440"
+
+  tasks:
+
+    # Populate the variable "spu_serials" from the [hpe_servers] group in inventory
+    - name: Pull SPU serials from inventory
+      ansible.builtin.set_fact:
+        spu_serials: "{{ groups.hpe_servers | \
+          map('extract', hostvars, 'spu_serial') | list }}"
+
+    # Ask for nPod name, query Nebulon ON for nPod details and store that in a
+    # variable named `npod`
+    - name: Get nPod
+      nebulon.nebulon_on.neb_npod_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ source_npod_name }}"
+      register: npod
+
+    # Set the npod_uuid variable
+    - name: Set fact
+      ansible.builtin.set_fact:
+        npod_uuid: "{{ npod.npods[0].uuid }}"
+
+    # The module expects volume UUIDs so we go ahead and get a list of volumes
+    # so the user can specify an exact name or partial match for LUN creation
+    - name: Get nPod volumes
+      nebulon.nebulon_on.neb_volume_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        npod_uuid: "{{ npod_uuid }}"
+      register: npod_volumes
+
+    # - name: Debug volume UUIDs
+    #   ansible.builtin.debug:
+    #     var: npod_volumes
+
+    # As written this will map all the snapshot volume names
+    - name: Find clone source volume (snapshot) names
+      ansible.builtin.set_fact:
+        source_volume_names: "{{ npod_volumes.volumes |
+          selectattr('read_only_snapshot', 'equalto', true) |
+          map(attribute='name') | sort | list }}"
+
+    # - name: Debug volume UUIDs
+    #   ansible.builtin.debug:
+    #     var: source_volume_names
+
+    # Sample return:
+    # "source_volume_names": [
+    #     "Source_nPod_HPE_server-05.tme.nebulon.com_os_23-08-29_03:00",
+    #     "Source_nPod_HPE_server-06.tme.nebulon.com_os_23-08-29_03:00",
+    #     "Source_nPod_HPE_server-07.tme.nebulon.com_os_23-08-29_03:00",
+    #     "Source_nPod_HPE_server-08.tme.nebulon.com_os_23-08-29_03:00"
+    # ]
+
+    # Create a snapshot using the volume_uuid variable as a base
+    # Only fires if we don't already have snapshots of the base volumes
+    - name: Create new snapshot
+      nebulon.nebulon_on.neb_snapshot:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        volume_uuids: "{{ item }}"
+        name_patterns:
+          - "%v_source"
+        state: present
+      with_items: "{{ source_volume_uuids }}"
+      register: source_snapshot_volumes
+      when: not source_volume_names
+
+    # Trim the time stamps from the source_volume_names to create the volume
+    # names we will create on the target nPod
+    - name: Trim source volume names
+      ansible.builtin.set_fact:
+        target_new_volume_names: "{{ source_volume_names |
+          map('regex_replace', '(_os).*', '_clone') | list }}"
+      loop: "{{ source_volume_names }}"
+
+    # - name: Debug volume UUIDs
+    #   ansible.builtin.debug:
+    #     var: target_new_volume_names
+
+    # "target_new_volume_names": [
+    #     "Source_nPod_HPE_server-05.tme.nebulon.com_clone",
+    #     "Source_nPod_HPE_server-06.tme.nebulon.com_clone",
+    #     "Source_nPod_HPE_server-07.tme.nebulon.com_clone",
+    #     "Source_nPod_HPE_server-08.tme.nebulon.com_clone"
+    # ]
+
+    # At this point we have the source volume names we will replicate
+    # Now create the target volumes on the other nPod
+    # Populate the variable "spu_serials_target" from the [lenovo_servers] group in inventory
+    - name: Pull SPU details from inventory
+      ansible.builtin.set_fact:
+        spu_serials_target: "{{ groups.lenovo_servers | map('extract', hostvars, 'spu_serial') | list }}"
+        spu_network_target: "{{ groups.lenovo_servers | map('extract', hostvars, 'spu_address') | list }}"
+
+    # Ask for nPod name, query Nebulon ON for nPod details
+    - name: Get nPod
+      nebulon.nebulon_on.neb_npod_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ target_npod_name }}"
+      register: npod_target
+
+    # Set the npod_uuid variable
+    - name: Set fact
+      ansible.builtin.set_fact:
+        npod_uuid_target: "{{ npod_target.npods[0].uuid }}"
+
+    - name: Create list for volume to SPU pairings
+      ansible.builtin.set_fact:
+        volume_serial_pairings: "{{ dict(target_new_volume_names | zip(spu_serials_target)) }}"
+
+    # Create the volumes that will accept the cloned data from the source nPod
+    - name: Create empty volumes to accept replicated data from source nPod
+      nebulon.nebulon_on.neb_volume:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ item.key }}"
+        npod_uuid: "{{ npod_uuid_target }}"
+        size: "{{ volume_size }}"
+        mirrored: false
+        owner_spu_serial: "{{ item.value }}"
+        state: present
+      loop: "{{ volume_serial_pairings | dict2items }}"
+
+    # - name: Create dictionary for volume replication commands
+    #   ansible.builtin.set_fact:
+    #     replication_pairs: "{{ dict(source_volume_names | zip(target_new_volume_names)) }}"
+
+    - name: Copy facts to hpe_spus groups
+      ansible.builtin.set_fact:
+        # volume_replication_pairs: "{{ replication_pairs }}"
+        volume_source: "{{ source_volume_names }}"
+        volume_target: "{{ target_new_volume_names }}"
+        target_spu_network: "{{ spu_network_target }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      with_items: "{{ groups['hpe_spus'] }}"
+      when: item != "localhost"
+
+# ===========================================================================
+# Replicate volume contents from source to target nPod
+# ===========================================================================
+- name: Replicate volume contents to target nPod
+  hosts: hpe_spus
+  gather_facts: true
+  tags: play_replicate
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  # Each host in hpe_spus has the following delegated facts:
+    # "volume_source": [
+    #     "Source_nPod_HPE_server-05.tme.nebulon.com_os_23-08-29_03:00",
+    #     "Source_nPod_HPE_server-06.tme.nebulon.com_os_23-08-29_03:00",
+    #     "Source_nPod_HPE_server-07.tme.nebulon.com_os_23-08-29_03:00",
+    #     "Source_nPod_HPE_server-08.tme.nebulon.com_os_23-08-29_03:00"
+    # ]
+
+    # "volume_target": [
+    #     "Source_nPod_HPE_server-05.tme.nebulon.com_clone",
+    #     "Source_nPod_HPE_server-06.tme.nebulon.com_clone",
+    #     "Source_nPod_HPE_server-07.tme.nebulon.com_clone",
+    #     "Source_nPod_HPE_server-08.tme.nebulon.com_clone"
+    # ]
+
+    # "target_spu_network": [
+    #     "10.100.29.117",
+    #     "10.100.29.118",
+    #     "10.100.29.119",
+    #     "10.100.29.120"
+    # ]
+
+    # Example:
+    # copyvv 012386435a39449519-data0.spus.nebuloninc.com filevv_23-08-28_0725=filevv_clone
+
+  tasks:
+
+    - name: Create LUN copy script on each source SPU
+      ansible.builtin.file:
+        path: "/root/copyvv.sh"
+        state: touch
+        mode: a+x
+
+    - name: Create LUN copy script on {{ ansible_hostname }}
+      ansible.builtin.lineinfile:
+        path: "/root/copyvv.sh"
+        line: "{{ item }}"
+      with_items:
+        - '#!/bin/bash'
+        - "/usr/bin/copyvv {{ target_spu_network[0] }} {{ volume_source[0] }}={{ volume_target[0] }}"
+      no_log: true
+      when: ansible_hostname == "medusa-b045e"
+
+    - name: Create LUN copy script on {{ ansible_hostname }}
+      ansible.builtin.lineinfile:
+        path: "/root/copyvv.sh"
+        line: "{{ item }}"
+      with_items:
+        - '#!/bin/bash'
+        - "/usr/bin/copyvv {{ target_spu_network[1] }} {{ volume_source[1] }}={{ volume_target[1] }}"
+      no_log: true
+      when: ansible_hostname == "medusa-b042a"
+
+    - name: Create LUN copy script on {{ ansible_hostname }}
+      ansible.builtin.lineinfile:
+        path: "/root/copyvv.sh"
+        line: "{{ item }}"
+      with_items:
+        - '#!/bin/bash'
+        - "/usr/bin/copyvv {{ target_spu_network[2] }} {{ volume_source[2] }}={{ volume_target[2] }}"
+      no_log: true
+      when: ansible_hostname == "medusa-a911"
+
+    - name: Create LUN copy script on {{ ansible_hostname }}
+      ansible.builtin.lineinfile:
+        path: "/root/copyvv.sh"
+        line: "{{ item }}"
+      with_items:
+        - '#!/bin/bash'
+        - "/usr/bin/copyvv {{ target_spu_network[3] }} {{ volume_source[3] }}={{ volume_target[3] }}"
+      no_log: true
+      when: ansible_hostname == "medusa-b045c"
+
+    - name: Execute LUN copy script
+      ansible.builtin.command:
+        bash /root/copyvv.sh
+      changed_when: true
+      tags: run_script
+
+# ===========================================================================
+# Shut down source nPod
+# ===========================================================================
+- hosts: hpe_ilom
+  connection: local
+  name: Shut down source HPE system
+  gather_facts: false
+  tags: play_shutdown_source_npod
+  # Allowable values (HPE) (['None', 'Cd', 'Hdd', 'Usb', 'SDCard', 'Utilities', 'Diags', 'BiosSetup', 'Pxe', 'UefiShell', 'UefiHttp', 'UefiTarget'])"}
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    bootdevice: BiosSetup
+    boot_next: Boot0001
+
+  tasks:
+
+    - name: Set one-time boot device to {{ bootdevice }}
+      community.general.redfish_command:
+        category: Systems
+        command: SetOneTimeBoot
+        bootdevice: "{{ bootdevice }}"
+        boot_next: "{{ boot_next }}"
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: onetimeboot
+
+    - name: Reboot system
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+
+# ===========================================================================
+# Switch over to new nPod
+# ===========================================================================
+- name: Switch npod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_switch_npods
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  vars:
+    npod_name: "Target_nPod_Lenovo"
+
+  tasks:
+    # Populate the variable "spu_serials" from the [hpe_servers] group in inventory
+    - name: Pull SPU serials from inventory
+      ansible.builtin.set_fact:
+        spu_serials: "{{ groups.lenovo_servers | \
+          map('extract', hostvars, 'spu_serial') | list }}"
+
+    # Ask for nPod name, query Nebulon ON for nPod details and store that in a
+    # variable named `npod`
+    - name: Get nPod
+      nebulon.nebulon_on.neb_npod_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        name: "{{ npod_name }}"
+      register: npod
+
+    # Set the npod_uuid variable
+    - name: Set fact
+      ansible.builtin.set_fact:
+        npod_uuid: "{{ npod.npods[0].uuid }}"
+
+    # The module expects volume UUIDs so we go ahead and get a list of volumes
+    # so the user can specify an exact name or partial match for LUN creation
+    - name: Get nPod volumes
+      nebulon.nebulon_on.neb_volume_info:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        npod_uuid: "{{ npod_uuid }}"
+      register: npod_volumes
+
+    # Extract the volume UUIDs
+    - name: Extract all nPod volume UUIDs
+      ansible.builtin.set_fact:
+        volume_uuid: "{{ npod_volumes.volumes | map(attribute='uuid') | list }}"
+
+    # Export the volumes to each host
+    - name: Export volume to its owner
+      nebulon.nebulon_on.neb_volume_access:
+        neb_username: "{{ vault_neb_username }}"
+        neb_password: "{{ vault_neb_password }}"
+        volume_uuid: "{{ item }}"
+        state: local
+        lun_id: 0
+      loop: "{{ volume_uuid }}"
+
+# ===========================================================================
+# Bring up target nPod
+# ===========================================================================
+- hosts: lenovo_ilom
+  connection: local
+  name: Bring up target nPod hosts
+  gather_facts: false
+  tags: play_startup_target_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+
+    - name: Reboot system
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"

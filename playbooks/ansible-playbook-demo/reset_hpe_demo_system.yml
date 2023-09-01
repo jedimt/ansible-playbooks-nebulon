@@ -1,0 +1,59 @@
+---
+# ansible-playbook -i inventory/all-hosts.yml playbooks/ansible-playbook-demo/reset_hpe_demo_system.yml
+# ===========================================================================
+# Reset Lenovo systems
+# ===========================================================================
+- hosts: lenovo_ilom
+  connection: local
+  name: Bring up target nPod hosts
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+  vars:
+    bootdevice: BiosSetup
+    boot_next: Boot0001
+
+  tasks:
+
+    - name: Set one-time boot device to {{ bootdevice }}
+      community.general.redfish_command:
+        category: Systems
+        command: SetOneTimeBoot
+        bootdevice: "{{ bootdevice }}"
+        boot_next: "{{ boot_next }}"
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+      register: onetimeboot
+
+    - name: Reboot system
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+
+# ===========================================================================
+# Reset Lenovo systems
+# ===========================================================================
+- hosts: hpe_ilom
+  connection: local
+  name: Bring up source nPod hosts
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  tasks:
+
+    - name: Reboot system
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
