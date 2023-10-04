@@ -1,0 +1,204 @@
+---
+# From: https://github.com/cloudmaniac/ansible-deploy-vmware-vm
+# https://cloudmaniac.net/deploy-multiple-vm-with-ansible-on-vsphere/
+
+# needs the VMware Automation Python SDK
+# pip install --upgrade git+https://github.com/vmware/vsphere-automation-sdk-python.git
+
+# Example:
+# Lenovo Systems:
+# ansible-playbook -i inventory/tme-rw-01.yml playbooks/ansible-playbook-ransomeware-demo/deploy_ransomware_vm.yml
+
+# HPE Systems:
+# ansible-playbook -i inventory/tme-rw-02.yml playbooks/ansible-playbook-ransomeware-demo/deploy_ransomware_vm.yml
+
+# Create a local datastore for the ransomware VM. This is to help speed up the process.
+- name: Create volume and export for ransomware VM
+  hosts: localhost
+  connection: local
+
+  vars_files:
+    - ../../credentials.yml
+
+  module_defaults:
+    group/nebulon.nebulon_on.nebulon:
+      neb_username: "{{ vault_neb_username }}"
+      neb_password: "{{ vault_neb_password }}"
+    group/vmware:
+      hostname: '{{ deploy_vsphere_host }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vault_vcenter_password }}'
+      validate_certs: false
+
+  tasks:
+
+  # Extract some hostvars from the inventory source. This is required since this section of the
+  # playbook is running against localhost, but most of the variables are defined for the VM
+    # - name: Set up variables
+    #   ansible.builtin.set_fact:
+    #     deploy_vsphere_host: "{{ groups.servers | map('extract', hostvars, 'deploy_vsphere_host') | list }}"
+    #     vcenter_datacenter: "{{ groups.servers | map('extract', hostvars, 'vcenter_datacenter') | list }}"
+    #     template_name: "{{ groups.servers | map('extract', hostvars, 'guest_template') | list }}"
+    #     vcenter_username: "{{ groups.servers | map('extract', hostvars, 'vcenter_username') | list }}"
+
+# BUG: https://github.com/ansible-collections/community.vmware/issues/1078
+# Have to use short names for modules
+
+  # Get VM inventory from vCenter
+    - name: Get VM inventory
+      vmware_guest_info:
+        hostname: '{{ deploy_vsphere_host }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vault_vcenter_password }}'
+        datacenter: '{{ vcenter_datacenter }}'
+        name: "{{ guest_template }}"
+      register: vms
+
+    - name: Set variables
+      ansible.builtin.set_fact:
+        esxi_server: "{{ vms.instance.hw_esxi_host }}"
+
+    - name: Get individual host info from server hostname
+      nebulon.nebulon_on.neb_host_info:
+        host_name: "{{ esxi_server }}"
+      register: esxi_info
+
+    - name: Retrieve nPod by name
+      nebulon.nebulon_on.neb_npod_info:
+        name: "{{ npod_name }}"
+      register: npod_data
+
+    - name: Create nPod volume
+      nebulon.nebulon_on.neb_volume:
+        name: "{{ volume_name }}"
+        npod_uuid: "{{ npod_data.npods[0].uuid }}"
+        size: "{{ volume_size }}"
+        mirrored: "{{ volume_mirrored }}"
+        owner_spu_serial: "{{ esxi_info.hosts[0].spu_serials[0] }}"
+        state: present
+      register: volume_data
+
+    - name: Create exports
+      nebulon.nebulon_on.neb_volume_access:
+        volume_uuid: "{{ volume_data.volume.uuid }}"
+        state: "{{ export_type }}"
+
+    # Get the volume info for the datastore
+    - name: Retrieve volume details
+      nebulon.nebulon_on.neb_volume_info:
+        volume_name: "{{ volume_name }}"
+      register: volume_data
+      tags:
+        - datastore
+
+    - name: Set NAA device name
+      ansible.builtin.set_fact:
+        vmfs_device_name: "naa.{{ volume_data.volumes[0].wwn }}"
+      tags:
+        - datastore
+
+    - name: Get ESXi hostname to mount datastore
+      nebulon.nebulon_on.neb_host_info:
+        host_uuid: "{{ volume_data.volumes[0].accessible_by_host_uuids[0] }}"
+      register: host_info
+      tags:
+        - datastore
+
+    - name: Rescan HBA's for new devices
+      vmware_host_scanhba:
+        esxi_hostname: '{{ item }}'
+        refresh_storage: true
+        rescan_vmfs: true
+        rescan_hba: true
+      loop: "{{ groups.physical_hosts }}"
+      changed_when: false
+      tags:
+        - datastore
+
+    # Create a datastore on the local volume for the ransomware VM to use
+    - name: Mount VMFS datastore to ESXi
+      vmware_host_datastore:
+        datastore_name: '{{ volume_name }}'
+        datastore_type: 'vmfs'
+        vmfs_device_name: "{{ vmfs_device_name }}"
+        vmfs_version: 6
+        esxi_hostname: '{{ host_info.hosts[0].name }}'
+        state: present
+      tags:
+        - datastore
+
+    - name: Set variables for vmware_guest module
+      ansible.builtin.set_fact:
+      # Pass the lists to the join('') operator to turn them into strings for the module
+        name: "{{ groups.servers | map('extract', hostvars, 'inventory_hostname') | join('') }}"
+        size_gb: "{{ groups.servers | map('extract', hostvars, 'size_gb') | join('') }}"
+        type: "{{ groups.servers | map('extract', hostvars, 'vm_disk_type') | join('') }}"
+        ip: "{{ groups.servers | map('extract', hostvars, 'guest_custom_ip') | join('') }}"
+        memory_mb: "{{ groups.servers | map('extract', hostvars, 'guest_memory') | join('') }}"
+        num_cpus: "{{ groups.servers | map('extract', hostvars, 'guest_vcpu') | join('') }}"
+        inventory_hostname: "{{ groups.servers | map('extract', hostvars, 'inventory_hostname') | join('') }}"
+        deploy_vsphere_cluster: "{{ groups.servers | map('extract', hostvars, 'deploy_vsphere_cluster') | join('') }}"
+        deploy_vsphere_folder: "{{ groups.servers | map('extract', hostvars, 'deploy_vsphere_folder') | join('') }}"
+        deploy_vsphere_datacenter: "{{ groups.servers | map('extract', hostvars, 'deploy_vsphere_datacenter') | join('') }}"
+      tags:
+        - set_vars
+
+    - name: Deploy VM from template
+      vmware_guest:
+        validate_certs: false
+        datacenter: '{{ deploy_vsphere_datacenter }}'
+        cluster: '{{ deploy_vsphere_cluster }}'
+        folder: '{{ deploy_vsphere_folder }}'
+        name: "{{ name }}"
+        guest_id: '{{ guest_id }}'
+        disk:
+          - size_gb: "{{ size_gb }}"
+          # options: thin, thick, eagerzeroedthick
+            type: "{{ type }}"
+            datastore: "{{ volume_name }}"
+        networks:
+          - name: '{{ guest_network }}'
+            ip: "{{ ip }}"
+            netmask: '{{ guest_netmask }}'
+            gateway: '{{ guest_gateway }}'
+            dns_servers:
+              - '{{ guest_dns_server }}'
+        hardware:
+          memory_mb: "{{ memory_mb }}"
+          num_cpus: "{{ num_cpus }}"
+        customization:
+          dns_servers:
+            - '{{ guest_dns_server }}'
+          domain: '{{ guest_domain_name }}'
+          hostname: "{{ inventory_hostname }}"
+        template: '{{ guest_template }}'
+        wait_for_ip_address: false
+      register: vms_deployed
+      tags: deploy_vm
+
+    # Having issues with failed customizations due to network issues
+    # So trying to have the VMs come on one at a time to see if that helps
+    - name: Power on VMs
+      vmware_guest_powerstate:
+        folder: '{{ deploy_vsphere_folder }}'
+        name: '{{ inventory_hostname }}'
+        state: powered-on
+      throttle: 1
+      tags: power
+
+    # Wait for SSH to come online so we know the VMs are up
+    - name: Wait for SSH service to come online
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 2
+        timeout: 300
+        host: "{{ inventory_hostname }}"
+      tags: service
+      when: vms_deployed.changed
+
+    # Wait for VM customization to complete
+    - name: Waiting for VMs to stabalize
+      ansible.builtin.pause:
+        seconds: 60
+      tags: service
+      when: vms_deployed.changed

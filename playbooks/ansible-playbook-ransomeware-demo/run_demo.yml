@@ -1,0 +1,17 @@
+---
+# Example invocation
+# Lenovo system:
+# ansible-playbook -i inventory/tme-rw-01.yml playbooks/ansible-playbook-ransomeware-demo/run_demo.yml
+
+# HPE system:
+# ansible-playbook -i inventory/tme-rw-02.yml playbooks/ansible-playbook-ransomeware-demo/run_demo.yml
+
+# Deploy the ransomware VM
+- name: Deploy ransomware VM
+  import_playbook: ./deploy_ransomware_vm.yml
+
+- name: Customize ransomware VM
+  import_playbook: ./prep_ransomware_vm.yml
+
+- name: Run ransomware demo
+  import_playbook: ./ransomware_demo.yml

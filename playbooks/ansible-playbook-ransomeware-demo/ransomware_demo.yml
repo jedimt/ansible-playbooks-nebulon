@@ -1,0 +1,45 @@
+---
+# Example invocation
+
+# Lenovo System:
+# ansible-playbook -i inventory/tme-rw-01.yml playbooks/ansible-playbook-ransomeware-demo/ransomware_demo.yml
+
+# HPE System:
+# ansible-playbook -i inventory/tme-rw-02.yml playbooks/ansible-playbook-ransomeware-demo/ransomware_demo.yml
+
+- name: Ransomware prep
+  hosts: servers
+  # Gather_facts enabled so I can use the 'ansible_user_id' magic variable
+  gather_facts: true
+
+  vars:
+    user_home: "{{ lookup('env','HOME') }}"
+    # run_ransomware when set to true will run the decryptor and ransomware attack container
+    run_ransomware: true
+    # run_fio when set to true will run the workload generator that mimics the data patterns that
+    # will trigger the ransomware alerts in nebulon ON.
+    run_decryptor: false
+    # run_fio when set to true will run the workload generator that mimics the data patterns that
+    # will trigger the ransomware alerts in nebulon ON.
+
+  tasks:
+
+    - name: Start the ransomware attack (Ransomware)
+      community.docker.docker_container:
+        name: neb_attack
+        image: neb_ransomware
+        volumes:
+          - "/{{ ansible_user_id }}/data/:/Disk/TestData"
+        command: RansomwareClient
+      tags: docker_ransomware_run
+      when: run_ransomware
+
+    - name: Start the ransomware recovery (Decryptor)
+      community.docker.docker_container:
+        name: neb_decryptor
+        image: neb_ransomware
+        volumes:
+          - "/{{ ansible_user_id }}/data/:/Disk/TestData"
+        command: DecryptorClient
+      tags: docker_decryptor_run
+      when: run_decryptor

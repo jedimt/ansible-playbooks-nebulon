@@ -1,0 +1,46 @@
+servers:
+  hosts:
+    # This is the ransomware VM to be deployed for the HPE environment
+    tme-rw-02.tme.nebulon.com:
+      # vCenter / VM variables
+      guest_id: 'ubuntu64Guest'
+      guest_template: 'ubuntu20.04.4_local'
+      guest_custom_ip: '10.100.24.71'
+      guest_notes: "Ransomware server"
+      # vm_disk_type options: thin, thick, eagerzeroedthick
+      vm_disk_type: "thin"
+      size_gb: 150
+      guest_memory: 8196
+      guest_vcpu: 2
+      vcenter_ip: 10.100.24.20
+      vcenter_datacenter: "Santa Clara"
+      vcenter_username: "administrator@vsphere.local"
+      deploy_vsphere_cluster: 'App-Factory'
+      deploy_vsphere_host: 'hpevcsa.tme.nebulon.com'
+      deploy_vsphere_datacenter: 'Santa Clara'
+      # deploy_vsphere_folder: '/Santa Clara/vm/Kubernetes'
+      deploy_vsphere_folder: '/Santa Clara/vm'
+      guest_network: 'dvs-appfactory-vmnetwork'
+      guest_netmask: '255.255.252.0'
+      guest_gateway: '10.100.24.1'
+      guest_dns_server: '10.100.24.11'
+      guest_domain_name: 'tme.nebulon.com'
+
+localhost:
+  hosts:
+    127.0.0.1:
+      npod_name: "hpe_VMware"
+      volume_name: "ransomware_hpe"
+      # 250GiB volume. The VM disk is 150GB
+      volume_size: 268435456000
+      volume_mirrored: true
+      # type of export (present, all, host, local, absent)
+      export_type: all
+
+# Physical hosts. This is required for mounting volumes to the
+# ESXi hosts that are in the nPod
+
+physical_hosts:
+  hosts:
+    server-07.tme.nebulon.com:
+    server-08.tme.nebulon.com:

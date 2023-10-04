@@ -1,0 +1,70 @@
+servers:
+  hosts:
+    tme-rw-01.tme.nebulon.com:
+      # vCenter / VM variables
+      guest_id: 'ubuntu64Guest'
+      guest_template: 'ubuntu20.04.4_local'
+      guest_custom_ip: '10.100.24.70'
+      guest_notes: "Ransomware server"
+      size_gb: 150
+      # vm_disk_type options: thin, thick, eagerzeroedthick; thick doesn't seem to work
+      vm_disk_type: "thin"
+      guest_memory: 8196
+      guest_vcpu: 2
+      vcenter_ip: 10.100.24.31
+      vcenter_datacenter: "SC0"
+      vcenter_username: "administrator@vsphere.local"
+      deploy_vsphere_cluster: 'AppFactory'
+      deploy_vsphere_host: 'devvcsa.tme.nebulon.com'
+      deploy_vsphere_datacenter: 'SC0'
+      # deploy_vsphere_folder: '/SC0/vm/Kubernetes'
+      deploy_vsphere_folder: '/SC0/vm'
+      guest_network: 'dvs_appfactory-vmnetwork'
+      guest_netmask: '255.255.252.0'
+      guest_gateway: '10.100.24.1'
+      guest_dns_server: '10.100.24.11'
+      guest_domain_name: 'tme.nebulon.com'
+
+# Localhost is used for nebulon_on and all VMware modules
+localhost:
+  hosts:
+    127.0.0.1:
+      npod_name: "lenovo_VMware"
+      volume_name: "ransomware_lenovo"
+      # 250GiB volume. The VM disk is 150GB
+      volume_size: 268435456000
+      volume_mirrored: true
+      # type of export (all, local)
+      export_type: all
+      guest_id: 'ubuntu64Guest'
+      guest_template: 'ubuntu20.04.4_local'
+      guest_custom_ip: '10.100.24.70'
+      guest_notes: "Ransomware server"
+      size_gb: 150
+      # vm_disk_type options: thin, thick, eagerzeroedthick; thick doesn't seem to work
+      vm_disk_type: "thin"
+      guest_memory: 8196
+      guest_vcpu: 2
+      vcenter_ip: 10.100.24.31
+      vcenter_datacenter: "SC0"
+      vcenter_username: "administrator@vsphere.local"
+      deploy_vsphere_cluster: 'AppFactory'
+      deploy_vsphere_host: 'devvcsa.tme.nebulon.com'
+      deploy_vsphere_datacenter: 'SC0'
+      # deploy_vsphere_folder: '/SC0/vm/Kubernetes'
+      deploy_vsphere_folder: '/SC0/vm'
+      guest_network: 'dvs_appfactory-vmnetwork'
+      guest_netmask: '255.255.252.0'
+      guest_gateway: '10.100.24.1'
+      guest_dns_server: '10.100.24.11'
+      guest_domain_name: 'tme.nebulon.com'
+
+# Physical hosts. This is required for mounting volumes to the
+# ESXi hosts that are in the nPod
+
+physical_hosts:
+  hosts:
+    server-09.tme.nebulon.com:
+    server-10.tme.nebulon.com:
+    server-11.tme.nebulon.com:
+    server-12.tme.nebulon.com:
