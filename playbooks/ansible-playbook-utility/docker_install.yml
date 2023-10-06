@@ -1,0 +1,21 @@
+---
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-utility/docker_install.yml
+
+# ===========================================================================
+# Install Docker
+# ===========================================================================
+- name: Install Docker
+  hosts: servers
+  gather_facts: true
+  tags: play_install_docker
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+
+  roles:
+    - { role: geerlingguy.docker,
+        docker_edition: "ce"
+    }
