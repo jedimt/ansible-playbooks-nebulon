@@ -142,11 +142,11 @@
     }
 
 # ===========================================================================
-# DLIO Installation and configuration
+# MLPerf Storage Benchmark Installation and configuration
 # ===========================================================================
-- name: Install and configure DLIO
+- name: Install and configure MLPerf Storage Benchmark
   hosts: servers
-  tags: play_dlio_install
+  tags: play_mlperf_install
   # become: true
   gather_facts: true
 
@@ -155,6 +155,6 @@
     - "../../credentials.yml"
 
   roles:
-    - { role: ansible-role-dlio,
+    - { role: jedimt.mlperf,
         skip_validation: true
     }
