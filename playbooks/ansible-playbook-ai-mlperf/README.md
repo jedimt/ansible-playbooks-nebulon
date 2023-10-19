@@ -9,7 +9,7 @@ Prerequisites
 This playbook makes the following assumptions:
 - You have a template set up to boot from Nebulon with an Ubuntu 22.04 image
 - You have defined the volumes you want in the vars/ directory in the form of `nPod_{{demopod}}.yml`.
--
+- Python 3.10 is installed in the Ubuntu 22.04 deployed image. This is the default for 22.04 LTS.
 
 Roles Used
 ----------
