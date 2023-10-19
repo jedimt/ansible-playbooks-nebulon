@@ -2,6 +2,7 @@
 # Set up Cloud Init on new system
 # Example Invocation:
 # ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-cloudinit/cloudinit-setup.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-cloudinit/cloudinit-setup.yml
 
 - name: Cloud Init image prep for Ubuntu 20/22 in TME environment
   hosts: servers[0]
@@ -11,6 +12,9 @@
   vars_files:
     # Ansible vault with all required passwords
     - "../../credentials.yml"
+
+    # Ansible vault with all serial numbers
+    - "../../serials.yml"
 
   roles:
     - { role: jedimt.cloud_init,
