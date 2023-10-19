@@ -1,0 +1,28 @@
+---
+# Vars files for volumes to create for AI workload
+volume_state: present
+export_type: local
+volumes:
+  - name: "server_05_local"
+    size: 4000000000000
+    mirrored: false
+    owner_spu_serial: "{{ server_05_spu_serial }}"
+    state: "{{ volume_state }}"
+
+  - name: "server_06_local"
+    size: 4000000000000
+    mirrored: false
+    owner_spu_serial: "{{ server_06_spu_serial }}"
+    state: "{{ volume_state }}"
+
+  - name: "server_07_local"
+    size: 4000000000000
+    mirrored: false
+    owner_spu_serial: "{{ server_07_spu_serial }}"
+    state: "{{ volume_state }}"
+
+  - name: "server_08_local"
+    size: 4000000000000
+    mirrored: false
+    owner_spu_serial: "{{ server_08_spu_serial }}"
+    state: "{{ volume_state }}"

@@ -1,0 +1,160 @@
+---
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-ai-mlperf/main.yml -e 'ansible_user=root'
+# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-ai-mlperf/main.yml -e 'ansible_user=root'
+
+# ===========================================================================
+# Create Nebulon nPod
+# ===========================================================================
+- name: Create Nebulon nPod
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_create_npod
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+    # Ansible vault with all required serial numbers
+    - "../../serials.yml"
+
+  roles:
+    - { role: jedimt.nebulon_create_npod,
+        npod_name: "nPod_{{ demopod }}",
+        npod_template: "Ubuntu 22.04.3 AI Express"
+    }
+
+# Wait for hosts to boot up
+- name: Wait for hosts to reboot
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for hosts to come up - Minutes to wait {{ wait_hosts }}
+      ansible.builtin.pause:
+        minutes: "{{ wait_hosts }}"
+      when: hostvars['localhost']['reboot_required']
+
+# ===========================================================================
+# Copy SSH keys to target hosts for passwordless authentication
+# ===========================================================================
+- name: Copy pubkeys to target hosts
+  hosts: servers
+  gather_facts: false
+  # become: true
+  tags: play_ssh_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.authorized_keys
+
+# ===========================================================================
+# Update Ansible controller SSH keys
+# ===========================================================================
+- name: Update SSH keys for Ansible controller known_hosts
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: play_ssh_sync
+
+  roles:
+    - jedimt.ssh
+
+# ===========================================================================
+# Disable APT automatic updates/upgrades
+# ===========================================================================
+- name: Disable APT updates and upgrades
+  hosts: servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.apt
+
+# ===========================================================================
+# Network configuration
+# ===========================================================================
+- name: Configure netplan and DNS settings
+  hosts: servers
+  become: true
+  tags: play_network_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - jedimt.network_setup
+
+# ===========================================================================
+# Nebulon storage configuration
+# ===========================================================================
+- name: Configure storage volumes
+  hosts: localhost
+  connection: local
+  tags: play_storage_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+    # Ansible vault with all required serial numbers
+    - "../../serials.yml"
+    # Volumes to manage
+    - "volumes_{{ demopod }}.yml"
+
+  # module_defaults requires nebulon.nebulon_on version 1.2.1 or later
+  module_defaults:
+    group/nebulon.nebulon_on.nebulon:
+      neb_username: "{{ vault_neb_username }}"
+      neb_password: "{{ vault_neb_password }}"
+
+  roles:
+    # volumes are defined in the vars/volumes{{demopod}}.yml files
+    # alternatively, they can be defined in line when calling the role
+    - { role: jedimt.nebulon_manage_volumes,
+        npod_name: "nPod_{{ demopod }}"
+    }
+
+
+# ===========================================================================
+# Mount new volumes to Linux hosts
+# ===========================================================================
+- name: Mount new volumes to hosts
+  hosts: servers
+  become: true
+  tags: play_scsi_dev
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.linux_add_scsi_dev,
+        create_fs: true,
+        fstype: 'xfs',
+        mount_dir: '/data'
+    }
+
+# ===========================================================================
+# DLIO Installation and configuration
+# ===========================================================================
+- name: Install and configure DLIO
+  hosts: servers
+  tags: play_dlio_install
+  # become: true
+  gather_facts: true
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: ansible-role-dlio,
+        skip_validation: true
+    }
