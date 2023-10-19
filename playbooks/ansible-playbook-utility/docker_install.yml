@@ -14,7 +14,6 @@
     # Ansible vault with all required passwords
     - "../../credentials.yml"
 
-
   roles:
     - { role: geerlingguy.docker,
         docker_edition: "ce"
