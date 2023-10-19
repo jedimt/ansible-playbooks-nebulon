@@ -2,10 +2,6 @@
 all:
   hosts:
     localhost:
-      # Since there are multiple physical groups of systems I specify
-      # a grouping of equipment to use for naming the nPod. This is unique
-      # per inventory.
-      demopod: "lenovo"
       # How to wait (in minutes) for hosts to boot after nPod creation
       wait_hosts: 3
       # How long to wait for scripted install of ESXi
@@ -14,6 +10,11 @@ all:
       netmask_bits: 24
       # vCenter variables unique to the Lenovo systems
       vcenter_hostname: "devvcsa.tme.nebulon.com"
+  vars:
+    # Since there are multiple physical groups of systems I specify
+    # a grouping of equipment to use for naming the nPod. This is unique
+    # per inventory.
+    demopod: "lenovo"
 
 # Physical server inventory
 servers:
