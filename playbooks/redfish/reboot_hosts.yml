@@ -1,0 +1,21 @@
+---
+# ansible-playbook -i inventory/lenovo.yml playbooks/redfish/reboot_hosts.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/redfish/reboot_hosts.yml
+
+- hosts: myhosts
+  connection: local
+  name: Reboot hosts
+  gather_facts: false
+
+  vars_files:
+    ../../credentials.yml
+
+  tasks:
+
+    - name: Reboot system
+      community.general.redfish_command:
+        category: Systems
+        command: PowerForceRestart
+        baseuri: "{{ baseuri }}"
+        username: "{{ username }}"
+        password: "{{ password }}"

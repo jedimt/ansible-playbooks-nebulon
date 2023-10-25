@@ -1,11 +1,14 @@
 ---
-# ansible-playbook -i inventory/hpe.yml playbooks/ansible-playbook-redfish/set_onetime_boot_next.yml
+# ansible-playbook -i inventory/hpe.yml playbooks/redfish/set_onetime_boot_next.yml
 
 - hosts: myhosts
   connection: local
   name: Set one-time boot device (UEFI boot next mode)
   gather_facts: false
   # Allowable values (HPE) (['None', 'Cd', 'Hdd', 'Usb', 'SDCard', 'Utilities', 'Diags', 'BiosSetup', 'Pxe', 'UefiShell', 'UefiHttp', 'UefiTarget'])"}
+
+  vars_files:
+    ../../credentials.yml
 
   vars:
     bootdevice: BiosSetup
