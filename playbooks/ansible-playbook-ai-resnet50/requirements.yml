@@ -1,0 +1,5 @@
+---
+
+roles:
+  - name: nvidia.nvidia_driver
+  - name: nvidia.nvidia_docker
