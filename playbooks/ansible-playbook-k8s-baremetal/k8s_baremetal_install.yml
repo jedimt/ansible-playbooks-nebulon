@@ -159,7 +159,10 @@
   tags: play_metallb
 
   roles:
-    - jedimt.kubernetes_metallb
+    - { role: jedimt.kubernetes_metallb,
+        # MetalLB L2 load balancer for K8s (v0.13.9 | v0.12.1)
+        metallb_version: "v0.13.9"
+    }
 
 # ===========================================================================
 # Install the Nebulon CSI driver
