@@ -44,6 +44,11 @@ k8s:
     k8s_master:
       hosts:
         server-09.tme.nebulon.com:
+      vars:
+        # "Service" IP addresses to use for pods needing a load balancer
+        # This example represents a continuous range of five IP addresses
+        metallb_start: 10.100.24.48
+        metallb_end: 10.100.24.52
     k8s_nodes:
       hosts:
         server-10.tme.nebulon.com:

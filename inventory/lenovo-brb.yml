@@ -35,6 +35,10 @@ k8s_master:
       memory_mb: 8192
       guest_vcpu: 2
       loadbalancer: "dev-k8s-haproxy-01.tme.nebulon.com:6443"
+      # "Service" IP addresses to use for pods needing a load balancer
+      # This example represents a continuous range of five IP addresses
+      metallb_start: 10.100.24.48
+      metallb_end: 10.100.24.52
 
 # The additional control plane K8s nodes
 k8s_control:

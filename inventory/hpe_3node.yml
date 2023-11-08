@@ -2,10 +2,6 @@
 all:
   hosts:
     localhost:
-      # Since there are multiple physical groups of systems I specify
-      # a grouping of equipment to use for naming the nPod. This is unique
-      # per inventory.
-      demopod: "hpe"
       # How to wait (in minutes) for hosts to boot after nPod creation
       wait_hosts: 3
       # How long to wait for scripted install of ESXi
@@ -14,28 +10,41 @@ all:
       netmask_bits: 24
       # vCenter variables unique to the HPE systems
       vcenter_hostname: "hpevcsa.tme.nebulon.com"
+  vars:
+    # Since there are multiple physical groups of systems I specify
+    # a grouping of equipment to use for naming the nPod. This is unique
+    # per inventory.
+    demopod: "hpe"
 
 # Physical server inventory
 servers:
   hosts:
+    server-05.tme.nebulon.com:
+      spu_serial: 0123F7A8D51D48C819
+      spu_address: 10.100.29.114
+    server-06.tme.nebulon.com:
+      spu_serial: 01238F123073C87119
+      spu_address: 10.100.29.115
     server-07.tme.nebulon.com:
       spu_serial: 0123F5132F06C5C5EE
       spu_address: 10.100.29.116
-    server-08.tme.nebulon.com:
-      spu_serial: 0123237A9F163BAD19
-      spu_address: 10.100.29.113
+    # server-08.tme.nebulon.com:
+    #   spu_serial: 0123237A9F163BAD19
+    #   spu_address: 10.100.29.113
 ##### /VMware Bare Metal #####
 
 ##### K8s Inventory #####
 # Physical inventory for bare metal K8s deployments
 k8s:
   hosts:
+    server-05.tme.nebulon.com:
+    server-06.tme.nebulon.com:
     server-07.tme.nebulon.com:
-    server-08.tme.nebulon.com:
+    # server-08.tme.nebulon.com:
   children:
     k8s_master:
       hosts:
-        server-07.tme.nebulon.com:
+        server-05.tme.nebulon.com:
       vars:
         # "Service" IP addresses to use for pods needing a load balancer
         # This example represents a continuous range of five IP addresses
@@ -43,21 +52,27 @@ k8s:
         metallb_end: 10.100.24.89
     k8s_nodes:
       hosts:
-        server-08.tme.nebulon.com:
+        server-06.tme.nebulon.com:
+        server-07.tme.nebulon.com:
+        # server-08.tme.nebulon.com:
 ##### /K8s Inventory #####
 
 spus:
   hosts:
+    medusa-b045e.tme.nebulon.com:
+    medusa-b042a.tme.nebulon.com:
     medusa-a911.tme.nebulon.com:
-    medusa-b045c.tme.nebulon.com:
+    # medusa-b045c.tme.nebulon.com:
   vars:
     ansible_python_interpreter: auto_silent
 
 # VMware Bare metal
 vmware:
   hosts:
+    server-05.tme.nebulon.com:
+    server-06.tme.nebulon.com:
     server-07.tme.nebulon.com:
-    server-08.tme.nebulon.com:
+    # server-08.tme.nebulon.com:
   vars:
     vcsa_name: "hpevcsa.tme.nebulon.com"
     vcsa_size: "small"
@@ -78,38 +93,50 @@ vcsa:
 # Cassandra
 cassandara:
   hosts:
+    server-05.tme.nebulon.com:
+    server-06.tme.nebulon.com:
     server-07.tme.nebulon.com:
-    server-08.tme.nebulon.com:
+    # server-08.tme.nebulon.com:
 
 cassandra_seed:
   hosts:
-    server-07.tme.nebulon.com:
+    server-05.tme.nebulon.com:
 
 # Bare metal MongoDB
 # I don't think I acually need mongo_all, but will need to test with using the 'mongo' group instead
 mongo_all:
   hosts:
+    server-05.tme.nebulon.com:
+    server-06.tme.nebulon.com:
     server-07.tme.nebulon.com:
-    server-08.tme.nebulon.com:
+    # server-08.tme.nebulon.com:
 
 mongo:
   hosts:
+    server-05.tme.nebulon.com:
+    server-06.tme.nebulon.com:
     server-07.tme.nebulon.com:
-    server-08.tme.nebulon.com:
+    # server-08.tme.nebulon.com:
   children:
     mongo_master:
       hosts:
-        server-07.tme.nebulon.com:
+        server-06.tme.nebulon.com:
     mongo_replicas:
       hosts:
-        server-08.tme.nebulon.com:
+        server-06.tme.nebulon.com:
+        server-07.tme.nebulon.com:
+        # server-08.tme.nebulon.com:
 
 redfish:
   hosts:
+    server-05-lom.tme.nebulon.com:
+      baseuri: server-05-lom.tme.nebulon.com
+    server-06-lom.tme.nebulon.com:
+      baseuri: server-06-lom.tme.nebulon.com
     server-07-lom.tme.nebulon.com:
       baseuri: server-07-lom.tme.nebulon.com
-    server-08-lom.tme.nebulon.com:
-      baseuri: server-08-lom.tme.nebulon.com
+    # server-08-lom.tme.nebulon.com:
+    #   baseuri: server-08-lom.tme.nebulon.com
 
 myhosts:
   children:
