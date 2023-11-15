@@ -1,0 +1,18 @@
+---
+
+# ===========================================================================
+# ResNet-50 v1.5 Benchmark Installation and configuration
+# ===========================================================================
+- name: Install and configure ResNet50 benchmark
+  hosts: servers
+  tags: play_resnet50_install
+  gather_facts: true
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: ansible-role-resnet50,
+        skip_validation: true
+    }

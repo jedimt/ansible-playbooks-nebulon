@@ -1,0 +1,69 @@
+---
+# This playbook creates and mounts volumes to the servers
+
+# ===========================================================================
+# Nebulon storage configuration
+# ===========================================================================
+- name: Configure storage volumes
+  hosts: localhost
+  connection: local
+  tags: play_storage_setup
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+    # Ansible vault with all required serial numbers
+    - "../../serials.yml"
+    # Volumes to manage
+    - "volumes_{{ demopod }}.yml"
+
+  # module_defaults requires nebulon.nebulon_on version 1.2.1 or later
+  module_defaults:
+    group/nebulon.nebulon_on.nebulon:
+      neb_username: "{{ vault_neb_username }}"
+      neb_password: "{{ vault_neb_password }}"
+
+  roles:
+    # volumes are defined in the vars/volumes{{demopod}}.yml files
+    # alternatively, they can be defined in line when calling the role
+    - role: jedimt.nebulon_manage_volumes
+      npod_name: "nPod_{{ demopod }}"
+      # volume_state: present
+      # export_type: local
+      # volumes:
+      #   - name: "server_05_local"
+      #     size: 4000000000000
+      #     mirrored: false
+      #     owner_spu_serial: "{{ server_05_spu_serial }}"
+      #     state: "{{ volume_state }}"
+
+      #   - name: "server_06_local"
+      #     size: 4000000000000
+      #     mirrored: false
+      #     owner_spu_serial: "{{ server_06_spu_serial }}"
+      #     state: "{{ volume_state }}"
+
+      #   - name: "server_07_local"
+      #     size: 4000000000000
+      #     mirrored: false
+      #     owner_spu_serial: "{{ server_07_spu_serial }}"
+      #     state: "{{ volume_state }}"
+
+# ===========================================================================
+# Mount new volumes to Linux hosts
+# ===========================================================================
+- name: Mount new volumes to hosts
+  hosts: servers
+  become: true
+  tags: play_scsi_dev
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.linux_add_scsi_dev,
+        create_fs: true,
+        fstype: 'xfs',
+        mount_dir: '/data'
+    }

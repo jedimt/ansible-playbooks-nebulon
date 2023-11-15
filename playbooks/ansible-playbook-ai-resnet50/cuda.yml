@@ -1,0 +1,30 @@
+---
+# Example Invocation:
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-ai-resnet50/cuda.yml
+
+# ===========================================================================
+# NVIDIA Cuda installation
+# ===========================================================================
+- name: Install and configure NVIDIA CUDA components
+  hosts: servers
+  tags: play_cuda_install
+  gather_facts: true
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: jedimt.nvidia_container_toolkit }
+    - { role: jedimt.cuda,
+        skip_validation: true,
+        use_local_sources: true,
+        reboot_systems: true,
+        cuda_semantic_version: "11.8.0",
+        cuda_package_version: "520.61.05",
+        cudnn_version: "8.9.6.50",
+        cudnn_cuda_version: "cuda11.8",
+        tensorrt_version: "8.6.1",
+        venv_python_version: "3.10",
+        tensorflow_python_modules: ["tensorflow[and-cuda]==2.13.0"]
+    }

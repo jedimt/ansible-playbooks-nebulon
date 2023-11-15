@@ -1,0 +1,16 @@
+---
+
+# ===========================================================================
+# Docker install
+# ===========================================================================
+- name: Install and configure Docker
+  hosts: servers
+  tags: play_docker_install
+  gather_facts: true
+
+  vars_files:
+    # Ansible vault with all required passwords
+    - "../../credentials.yml"
+
+  roles:
+    - { role: geerlingguy.docker, docker_edition: "ce" }
