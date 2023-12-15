@@ -1,6 +1,9 @@
 ---
 # This playbook does the base Ubuntu server build
 
+# Example invocation
+# ansible-playbook -i inventory/lenovo.yml playbooks/ansible-playbook-ai-resnet50/base_server_build.yml
+
 # ===========================================================================
 # Create Nebulon nPod
 # ===========================================================================

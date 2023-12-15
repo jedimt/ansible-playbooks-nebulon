@@ -16,15 +16,22 @@
 
   roles:
     - { role: jedimt.nvidia_container_toolkit }
-    - { role: jedimt.cuda,
+    - { role: ansible-role-cuda,
         skip_validation: true,
         use_local_sources: true,
+        # local_cuda_pin_url: "http://linuxdev.tme.nebulon.com/install/cuda/cuda-ubuntu2204.pin",
+        # local_cuda_package_url: "http://linuxdev.tme.nebulon.com/install/cuda/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb",
+        # local_cuda_package_url: "http://linuxdev.tme.nebulon.com/install/cuda/cuda-repo-ubuntu2204-12-3-local_12.3.1-545.23.08-1_amd64.deb",
+        # local_tensorrt_package_url: "http://linuxdev.tme.nebulon.com/install/tensorrt/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8_1.0-1_amd64.deb",
+        # local_tensorrt_package_url: "http://linuxdev.tme.nebulon.com/install/tensorrt/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0_1.0-1_amd64.deb",
         reboot_systems: true,
-        cuda_semantic_version: "11.8.0",
-        cuda_package_version: "520.61.05",
-        cudnn_version: "8.9.6.50",
-        cudnn_cuda_version: "cuda11.8",
+        cuda_semantic_version: "11.8.0", # { 11.8.0 | 12.3.1 }
+        cuda_package_version: "520.61.0", # { 520.61.0 | 545.23.08 }
+        cudnn_version: "8.9.6.50", # { 8.9.6.50 | 8.9.7.29 }
+        cudnn_cuda_version: "cuda11.8", # { cuda11.8 | cuda12.2 }
+        install_tensorrt: true,
         tensorrt_version: "8.6.1",
         venv_python_version: "3.10",
+        install_tensorflow: true,
         tensorflow_python_modules: ["tensorflow[and-cuda]==2.13.0"]
     }
